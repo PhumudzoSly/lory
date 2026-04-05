@@ -63,9 +63,36 @@ function App() {
           BREAK_META.posture.defaultMinutes,
         ),
       },
+      mindfulness: {
+        nextDueAt: nextDueTimestamp(
+          "mindfulness",
+          BREAK_META.mindfulness.defaultMinutes,
+        ),
+      },
+      wrist: {
+        nextDueAt: nextDueTimestamp("wrist", BREAK_META.wrist.defaultMinutes),
+      },
     }),
   );
   const [toast, setToast] = useState<ToastState | null>(null);
+
+  useEffect(() => {
+    let unlistenFn: () => void;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen("test-toast", (event: any) => {
+        setToast(event.payload as ToastState);
+        if (!settings.mute) {
+          import("./lib/sound").then((m) => m.playChime());
+        }
+      }).then(unlisten => {
+        unlistenFn = unlisten;
+      });
+    });
+    return () => {
+      if (unlistenFn) unlistenFn();
+    };
+  }, [settings.mute]);
+
   const [isFullscreenSuppressed, setIsFullscreenSuppressed] = useState(false);
   const [dnd, setDnd] = useState(false);
   const [snoozeUntil, setSnoozeUntil] = useState<number | null>(null);
@@ -308,19 +335,35 @@ function App() {
                 const { exit } = await import("@tauri-apps/plugin-process");
                 const menu = await Menu.new({
                   items: [
-                    { id: "snooze30", text: "Snooze 30m", action: () => snooze(30) },
-                    { id: "snooze60", text: "Snooze 1h", action: () => snooze(60) },
-                    { 
-                      id: "dnd", 
-                      text: dnd ? "Disable DND" : "Enable DND", 
+                    {
+                      id: "snooze30",
+                      text: "Snooze 30m",
+                      action: () => snooze(30),
+                    },
+                    {
+                      id: "snooze60",
+                      text: "Snooze 1h",
+                      action: () => snooze(60),
+                    },
+                    {
+                      id: "dnd",
+                      text: dnd ? "Disable DND" : "Enable DND",
                       action: () => {
                         setDnd((prev) => !prev);
                         setSnoozeUntil(null);
                         setToast(null);
-                      }
+                      },
                     },
-                    { id: "settings", text: "Open settings", action: () => void openSettingsWindow() },
-                    { id: "quit", text: "Quit Lory", action: async () => await exit(0) },
+                    {
+                      id: "settings",
+                      text: "Open settings",
+                      action: () => void openSettingsWindow(),
+                    },
+                    {
+                      id: "quit",
+                      text: "Quit Lory",
+                      action: async () => await exit(0),
+                    },
                   ],
                 });
                 await menu.popup();

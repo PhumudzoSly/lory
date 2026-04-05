@@ -6,6 +6,9 @@ import type {
   ReminderPriority,
   ReminderScheduleType,
 } from "../lib/buddyConfig";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 
 type ReminderSettingsProps = {
   settings: AppSettings;
@@ -213,8 +216,9 @@ export function ReminderSettings({
               easier.
             </p>
           </div>
-          <button
+          <Button
             onClick={handleAddClick}
+            type="button"
             className="flex items-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary-dim px-6 py-3 text-on-primary shadow-sm transition-all hover:opacity-90"
           >
             <span
@@ -224,7 +228,7 @@ export function ReminderSettings({
               add
             </span>
             <span className="text-sm font-semibold">Add Custom Reminder</span>
-          </button>
+          </Button>
         </div>
 
         {isEditing && editingReminder && (
@@ -238,7 +242,7 @@ export function ReminderSettings({
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                   Title
                 </label>
-                <input
+                <Input
                   type="text"
                   value={editingReminder.title ?? ""}
                   onChange={(e) =>
@@ -255,7 +259,7 @@ export function ReminderSettings({
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                   Time
                 </label>
-                <input
+                <Input
                   type="time"
                   value={editingReminder.time ?? "12:00"}
                   onChange={(e) =>
@@ -282,9 +286,10 @@ export function ReminderSettings({
                   ).map(([typeValue, label]) => {
                     const selected = draftScheduleType === typeValue;
                     return (
-                      <button
+                      <Button
                         key={typeValue}
                         type="button"
+                        variant="ghost"
                         onClick={() =>
                           setEditingReminder((prev) => ({
                             ...prev,
@@ -311,7 +316,7 @@ export function ReminderSettings({
                         ].join(" ")}
                       >
                         {label}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -323,8 +328,9 @@ export function ReminderSettings({
                     Active Days
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() =>
                         setEditingReminder((prev) => ({
                           ...prev,
@@ -341,7 +347,7 @@ export function ReminderSettings({
                       ].join(" ")}
                     >
                       Every day
-                    </button>
+                    </Button>
                     {WEEK_DAYS.map((day) => {
                       const selected =
                         !(editingReminder.days ?? ["Every day"]).includes(
@@ -349,9 +355,10 @@ export function ReminderSettings({
                         ) && (editingReminder.days ?? []).includes(day);
 
                       return (
-                        <button
+                        <Button
                           key={day}
                           type="button"
+                          variant="ghost"
                           onClick={() =>
                             setEditingReminder((prev) => {
                               const currentDays = (
@@ -378,7 +385,7 @@ export function ReminderSettings({
                           ].join(" ")}
                         >
                           {day}
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>
@@ -390,7 +397,7 @@ export function ReminderSettings({
                   <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                     Date
                   </label>
-                  <input
+                  <Input
                     type="date"
                     value={
                       editingReminder.onceDate ??
@@ -412,7 +419,7 @@ export function ReminderSettings({
                   <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                     Interval Minutes
                   </label>
-                  <input
+                  <Input
                     type="number"
                     min={1}
                     value={editingReminder.intervalMinutes ?? 60}
@@ -434,7 +441,7 @@ export function ReminderSettings({
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                   Description
                 </label>
-                <input
+                <Input
                   type="text"
                   value={editingReminder.description ?? ""}
                   onChange={(e) =>
@@ -451,7 +458,7 @@ export function ReminderSettings({
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                   Roulette Messages (One per line)
                 </label>
-                <textarea
+                <Textarea
                   value={(editingReminder.messages ?? []).join("\n")}
                   onChange={(e) =>
                     setEditingReminder((prev) => ({
@@ -510,32 +517,37 @@ export function ReminderSettings({
 
             <div className="mt-6 flex justify-end gap-3">
               {editingReminder.id && (
-                <button
+                <Button
                   onClick={() =>
                     handleDeleteReminder(editingReminder.id as string)
                   }
+                  type="button"
+                  variant="ghost"
                   className="mr-auto rounded-lg px-4 py-2 font-semibold text-error transition-colors hover:bg-error/10"
                 >
                   Delete
-                </button>
+                </Button>
               )}
 
-              <button
+              <Button
                 onClick={() => {
                   setIsEditing(false);
                   setEditingReminder(null);
                 }}
+                type="button"
+                variant="ghost"
                 className="rounded-lg px-4 py-2 font-semibold text-on-surface-variant transition-colors hover:bg-surface-container/50"
               >
                 Cancel
-              </button>
+              </Button>
 
-              <button
+              <Button
                 onClick={handleSaveReminder}
+                type="button"
                 className="rounded-lg bg-primary px-6 py-2 font-semibold text-on-primary transition-colors hover:bg-primary-dim"
               >
                 Save
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -598,8 +610,9 @@ export function ReminderSettings({
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-6 text-left">
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 handleToggle(reminder.id);
@@ -614,7 +627,7 @@ export function ReminderSettings({
                               <span className="material-symbols-outlined text-2xl">
                                 {reminder.icon || "notifications"}
                               </span>
-                            </button>
+                            </Button>
 
                             <div>
                               <h5 className="mb-1 flex items-center gap-2 font-bold text-on-surface transition-colors group-hover:text-primary">
@@ -669,20 +682,23 @@ export function ReminderSettings({
                           </div>
 
                           <div className="flex gap-3">
-                            <button
+                            <Button
                               type="button"
+                              size="sm"
                               onClick={() => openEditor(reminder)}
                               className="rounded-lg bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-on-primary transition-colors hover:bg-primary-dim"
                             >
                               Edit
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
+                              size="sm"
+                              variant="outline"
                               onClick={() => handleDeleteReminder(reminder.id)}
                               className="rounded-lg border border-error/30 px-4 py-2 text-xs font-bold uppercase tracking-wider text-error transition-colors hover:bg-error/10"
                             >
                               Delete
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -739,8 +755,9 @@ export function ReminderSettings({
               )}
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={() =>
                 setSettings((prev) => ({
                   ...prev,
@@ -750,7 +767,7 @@ export function ReminderSettings({
               className="mt-auto w-full rounded-xl border border-outline-variant/20 py-3 text-xs font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high"
             >
               Clear History
-            </button>
+            </Button>
           </div>
         </div>
       </section>

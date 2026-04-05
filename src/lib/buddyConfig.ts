@@ -1,4 +1,4 @@
-export type BreakType = "eye" | "hydrate" | "stretch" | "full" | "posture";
+export type BreakType = "eye" | "hydrate" | "stretch" | "full" | "posture" | "mindfulness" | "wrist";
 export type BuddySkin = "sunny" | "mint" | "sky" | "rose";
 
 export type BreakSetting = {
@@ -105,6 +105,22 @@ export const BREAK_META: Record<
     max: 40,
     defaultMinutes: 25,
   },
+  mindfulness: {
+    label: "Mindfulness",
+    action: "2 minutes of box breathing",
+    priority: 2,
+    min: 30,
+    max: 120,
+    defaultMinutes: 90,
+  },
+  wrist: {
+    label: "Wrist Care",
+    action: "Prayer stretches and wrist circles",
+    priority: 2,
+    min: 30,
+    max: 120,
+    defaultMinutes: 60,
+  },
 };
 
 export const MESSAGES: Record<BreakType, string[]> = {
@@ -133,6 +149,16 @@ export const MESSAGES: Record<BreakType, string[]> = {
     "Quick posture check. Sit tall.",
     "Micro-adjust: back straight, wrists neutral.",
   ],
+  mindfulness: [
+    "Clear your attention residue. Take a breath.",
+    "Mental reset: look out a window, defocus.",
+    "Box breathing time. Inhale, hold, exhale, hold.",
+  ],
+  wrist: [
+    "Keyboard timeout. Stretch those wrists.",
+    "Prevent RSI: do some quick wrist circles.",
+    "Give your fingers a break. Flex and stretch.",
+  ],
 };
 
 export const buildDefaultSettings = (): AppSettings => ({
@@ -150,6 +176,14 @@ export const buildDefaultSettings = (): AppSettings => ({
     posture: {
       enabled: true,
       intervalMinutes: BREAK_META.posture.defaultMinutes,
+    },
+    mindfulness: {
+      enabled: true,
+      intervalMinutes: BREAK_META.mindfulness.defaultMinutes,
+    },
+    wrist: {
+      enabled: true,
+      intervalMinutes: BREAK_META.wrist.defaultMinutes,
     },
   },
   customReminders: [],
@@ -180,3 +214,4 @@ export const nextDueTimestamp = (
     breakType === "posture" ? postureRandomMinutes() : minutes;
   return Date.now() + selectedMinutes * 60_000;
 };
+

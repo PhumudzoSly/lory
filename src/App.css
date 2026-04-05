@@ -1,3 +1,9 @@
 #root {
   overflow: hidden; /* Prevents scrollbars from appearing during animations or hover */
 }
+
+html,
+body,
+#root {
+  background: transparent !important;
+}

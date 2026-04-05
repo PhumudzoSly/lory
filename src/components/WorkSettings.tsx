@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { type AppSettings } from "../lib/buddyConfig";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 
 interface WorkSettingsProps {
   settings: AppSettings;
@@ -110,6 +112,55 @@ export function WorkSettings({ settings, setSettings }: WorkSettingsProps) {
     };
   });
 
+  const weekdayAggregates = useMemo(() => {
+    const buckets: Record<string, { total: number; count: number }> = {
+      Mon: { total: 0, count: 0 },
+      Tue: { total: 0, count: 0 },
+      Wed: { total: 0, count: 0 },
+      Thu: { total: 0, count: 0 },
+      Fri: { total: 0, count: 0 },
+      Sat: { total: 0, count: 0 },
+      Sun: { total: 0, count: 0 },
+    };
+
+    Object.entries(settings.dailyLogs).forEach(([isoDate, hours]) => {
+      const date = new Date(isoDate);
+      if (Number.isNaN(date.getTime())) {
+        return;
+      }
+
+      const jsDay = date.getDay();
+      const dayLabel = days[(jsDay + 6) % 7];
+      const value = Number(hours);
+      if (!Number.isFinite(value) || value < 0) {
+        return;
+      }
+
+      buckets[dayLabel].total += value;
+      buckets[dayLabel].count += 1;
+    });
+
+    const rows = days.map((day) => {
+      const bucket = buckets[day];
+      const avg = bucket.count > 0 ? bucket.total / bucket.count : 0;
+      return {
+        day,
+        avg,
+        samples: bucket.count,
+      };
+    });
+
+    const maxAvg = Math.max(1, ...rows.map((row) => row.avg));
+    const totalLoggedDays = rows.reduce((sum, row) => sum + row.samples, 0);
+    const overallDailyAverage =
+      totalLoggedDays > 0
+        ? rows.reduce((sum, row) => sum + row.avg * row.samples, 0) /
+          totalLoggedDays
+        : 0;
+
+    return { rows, maxAvg, totalLoggedDays, overallDailyAverage };
+  }, [days, settings.dailyLogs]);
+
   return (
     <>
       <header className="mb-12 max-w-4xl">
@@ -160,7 +211,7 @@ export function WorkSettings({ settings, setSettings }: WorkSettingsProps) {
                     Work Start Time
                   </label>
                   <div className="flex items-center gap-4">
-                    <input
+                    <Input
                       className="w-full bg-surface-container-low border-none rounded-md focus:ring-2 focus:ring-primary/20 text-xl font-medium p-3"
                       type="time"
                       value={settings.workStartTime}
@@ -184,7 +235,7 @@ export function WorkSettings({ settings, setSettings }: WorkSettingsProps) {
                     Work End Time
                   </label>
                   <div className="flex items-center gap-4">
-                    <input
+                    <Input
                       className="w-full bg-surface-container-low border-none rounded-md focus:ring-2 focus:ring-primary/20 text-xl font-medium p-3"
                       type="time"
                       value={settings.workEndTime}
@@ -207,9 +258,9 @@ export function WorkSettings({ settings, setSettings }: WorkSettingsProps) {
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
           </section>
 
-          <section className="bg-surface-container-low p-8 rounded-xl">
-            <div className="flex flex-col md:flex-row gap-8 items-center">
-              <div className="flex-1 w-full">
+          <section className="bg-surface-container-low rounded-xl p-5 sm:p-6 lg:p-8">
+            <div className="grid grid-cols-1 items-start gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1fr)_220px]">
+              <div className="min-w-0 w-full">
                 <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary">
                     track_changes
@@ -222,13 +273,13 @@ export function WorkSettings({ settings, setSettings }: WorkSettingsProps) {
                 </p>
 
                 <div className="relative pt-1">
-                  <div className="flex flex-wrap mb-2 items-center justify-between">
-                    <div>
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex-shrink-0">
                       <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-primary bg-primary-container">
                         Target: {settings.workHoursGoal} Hours / Week
                       </span>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right">
                       <span className="text-xs font-semibold inline-block text-primary">
                         {percentComplete}% ({currentWeekHours.toFixed(1)}h
                         logged)
@@ -248,58 +299,101 @@ export function WorkSettings({ settings, setSettings }: WorkSettingsProps) {
                   <h4 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-4">
                     This Week
                   </h4>
-                  <div className="flex items-end justify-between h-24 gap-2">
-                    {weekData.map((day) => (
-                      <div
-                        key={day.name}
-                        className="flex flex-col items-center flex-1 gap-2"
-                      >
-                        <div className="w-full relative flex items-end justify-center h-full bg-surface-container-lowest/50 rounded-t-sm">
-                          {!day.isFuture && (
-                            <div
-                              className={`w-full rounded-t-sm transition-all duration-500 ${day.isToday ? "bg-primary" : "bg-primary/40 hover:bg-primary/60"}`}
-                              style={{
-                                height: `${Math.min(100, Math.max(4, (day.hours / 10) * 100))}%`,
-                              }}
-                              title={`${day.hours.toFixed(1)} hours`}
-                            ></div>
-                          )}
-                        </div>
-                        <span
-                          className={`text-[10px] font-black uppercase tracking-wider ${day.isToday ? "text-primary" : "text-on-surface-variant/70"}`}
+                  <div className="overflow-x-auto pb-1">
+                    <div className="flex min-w-[420px] items-end justify-between h-24 gap-2">
+                      {weekData.map((day) => (
+                        <div
+                          key={day.name}
+                          className="flex flex-col items-center flex-1 gap-2"
                         >
-                          {day.name}
-                        </span>
-                      </div>
-                    ))}
+                          <div className="w-full relative flex items-end justify-center h-full bg-surface-container-lowest/50 rounded-t-sm">
+                            {!day.isFuture && (
+                              <div
+                                className={`w-full rounded-t-sm transition-all duration-500 ${day.isToday ? "bg-primary" : "bg-primary/40 hover:bg-primary/60"}`}
+                                style={{
+                                  height: `${Math.min(100, Math.max(4, (day.hours / 10) * 100))}%`,
+                                }}
+                                title={`${day.hours.toFixed(1)} hours`}
+                              ></div>
+                            )}
+                          </div>
+                          <span
+                            className={`text-[10px] font-black uppercase tracking-wider ${day.isToday ? "text-primary" : "text-on-surface-variant/70"}`}
+                          >
+                            {day.name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                </div>
+
+                <div className="mt-8">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+                      All-Time Average by Weekday
+                    </h4>
+                    <span className="text-xs font-semibold text-on-surface-variant">
+                      Avg {weekdayAggregates.overallDailyAverage.toFixed(1)}h/day
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto pb-1">
+                    <div className="flex min-w-[420px] items-end justify-between h-24 gap-2">
+                      {weekdayAggregates.rows.map((row) => (
+                        <div key={row.day} className="flex flex-col items-center flex-1 gap-2">
+                          <div className="w-full relative flex items-end justify-center h-full bg-surface-container-lowest/50 rounded-t-sm">
+                            <div
+                              className="w-full rounded-t-sm bg-primary/70 hover:bg-primary transition-colors"
+                              style={{
+                                height: `${Math.max(4, (row.avg / weekdayAggregates.maxAvg) * 100)}%`,
+                              }}
+                              title={`${row.day}: ${row.avg.toFixed(1)}h avg (${row.samples} samples)`}
+                            ></div>
+                          </div>
+                          <span className="text-[10px] font-black uppercase tracking-wider text-on-surface-variant/70">
+                            {row.day}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-xs text-on-surface-variant">
+                    Built from {weekdayAggregates.totalLoggedDays} logged day
+                    {weekdayAggregates.totalLoggedDays === 1 ? "" : "s"} stored locally on your machine.
+                  </p>
                 </div>
               </div>
 
-              <div className="w-full md:w-48 aspect-square rounded-xl bg-surface-container-lowest flex flex-col items-center justify-center border-4 border-primary-container/30">
-                <span className="text-3xl font-extrabold text-primary">
+              <div className="w-full rounded-xl border-4 border-primary-container/30 bg-surface-container-lowest p-4 sm:p-5 xl:aspect-square xl:p-6 flex flex-col items-center justify-center">
+                <span className="text-2xl sm:text-3xl font-extrabold text-primary">
                   {settings.workHoursGoal}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                   Weekly Goal
                 </span>
-                <div className="mt-4 flex gap-2">
-                  <button
-                    className="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-primary hover:bg-primary-container transition-colors"
+                <div className="mt-4 flex w-full max-w-[180px] items-center justify-center gap-2">
+                  <Button
+                    className="h-9 w-9 rounded-full bg-surface-container-low text-primary hover:bg-primary-container transition-colors"
                     onClick={() => updateGoal(-1)}
+                    variant="ghost"
+                    size="icon"
                   >
                     <span className="material-symbols-outlined text-sm">
                       remove
                     </span>
-                  </button>
-                  <button
-                    className="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-primary hover:bg-primary-container transition-colors"
+                  </Button>
+                  <Button
+                    className="h-9 w-9 rounded-full bg-surface-container-low text-primary hover:bg-primary-container transition-colors"
                     onClick={() => updateGoal(1)}
+                    variant="ghost"
+                    size="icon"
                   >
                     <span className="material-symbols-outlined text-sm">
                       add
                     </span>
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
