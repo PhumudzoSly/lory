@@ -1,0 +1,283 @@
+import { useEffect, useRef } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import type { ToastState } from "../types/toast";
+import type {
+  AppSettings,
+  CustomReminder,
+  CustomReminderHistoryEntry,
+} from "../lib/buddyConfig";
+import { playChime } from "../lib/sound";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+
+type UseCustomReminderSchedulerParams = {
+  settings: AppSettings;
+  setSettings: Dispatch<SetStateAction<AppSettings>>;
+  mute: boolean;
+  isPaused: boolean;
+  isSuppressed: boolean;
+  toast: ToastState | null;
+  setToast: Dispatch<SetStateAction<ToastState | null>>;
+};
+
+const REMINDER_MILESTONES: Array<30 | 15 | 0> = [30, 15, 0];
+
+const buildDateAtTime = (baseDate: Date, time: string): Date => {
+  const [hour, minute] = time.split(":").map(Number);
+  const target = new Date(baseDate);
+  target.setHours(hour, minute, 0, 0);
+  return target;
+};
+
+const localDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const shouldRunToday = (reminder: CustomReminder, now: Date): boolean => {
+  if (reminder.scheduleType !== "daily") {
+    return true;
+  }
+
+  if (reminder.days.includes("Every day")) {
+    return true;
+  }
+
+  const todayName = now.toLocaleDateString("en-US", { weekday: "short" });
+  return reminder.days.includes(todayName);
+};
+
+const nextOccurrenceForReminder = (
+  reminder: CustomReminder,
+  now: Date,
+): Date | null => {
+  if (reminder.scheduleType === "once") {
+    if (!reminder.onceDate) {
+      return null;
+    }
+
+    const [year, month, day] = reminder.onceDate.split("-").map(Number);
+    const target = new Date(now);
+    target.setFullYear(year, month - 1, day);
+    target.setHours(0, 0, 0, 0);
+
+    return buildDateAtTime(target, reminder.time);
+  }
+
+  if (reminder.scheduleType === "interval") {
+    const every = Math.max(1, reminder.intervalMinutes ?? 60);
+    const intervalMs = every * 60_000;
+    const dayStart = new Date(now);
+    dayStart.setHours(0, 0, 0, 0);
+
+    const elapsed = now.getTime() - dayStart.getTime();
+    const nextSlot = Math.ceil(elapsed / intervalMs) * intervalMs;
+
+    return new Date(dayStart.getTime() + nextSlot);
+  }
+
+  if (!shouldRunToday(reminder, now)) {
+    return null;
+  }
+
+  return buildDateAtTime(now, reminder.time);
+};
+
+const appendHistory = (
+  setSettings: Dispatch<SetStateAction<AppSettings>>,
+  reminder: CustomReminder,
+  action: string,
+): void => {
+  const entry: CustomReminderHistoryEntry = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    reminderId: reminder.id,
+    title: reminder.title,
+    action,
+    triggeredAtIso: new Date().toISOString(),
+  };
+
+  setSettings((prev) => ({
+    ...prev,
+    customReminderHistory: [entry, ...prev.customReminderHistory].slice(0, 80),
+  }));
+};
+
+const focusOrCreateSettingsWindow = (): void => {
+  void WebviewWindow.getByLabel("settings").then((existing) => {
+    if (existing) {
+      void existing.show();
+      void existing.setFocus();
+      return;
+    }
+
+    const settingsWindow = new WebviewWindow("settings", {
+      title: "Lory Settings",
+      url: "/settings.html",
+      width: 1000,
+      height: 700,
+      center: true,
+    });
+
+    settingsWindow.once("tauri://created", () => {
+      void settingsWindow.setFocus();
+    });
+  });
+};
+
+export const useCustomReminderScheduler = ({
+  settings,
+  setSettings,
+  mute,
+  isPaused,
+  isSuppressed,
+  toast,
+  setToast,
+}: UseCustomReminderSchedulerParams): void => {
+  const dayKeyRef = useRef(localDateKey(new Date()));
+  const sentMilestonesRef = useRef<Record<string, Record<number, boolean>>>({});
+  const previousMinutesLeftRef = useRef<Record<string, number | null>>({});
+
+  useEffect(() => {
+    const tick = window.setInterval(() => {
+      const now = new Date();
+      const currentDayKey = localDateKey(now);
+
+      if (dayKeyRef.current !== currentDayKey) {
+        dayKeyRef.current = currentDayKey;
+        sentMilestonesRef.current = {};
+        previousMinutesLeftRef.current = {};
+      }
+
+      if (toast || isPaused || isSuppressed) {
+        return;
+      }
+
+      const enabledReminders = settings.customReminders.filter(
+        (r) => r.enabled,
+      );
+
+      for (const reminder of enabledReminders) {
+        const nextOccurrence = nextOccurrenceForReminder(reminder, now);
+        if (!nextOccurrence) {
+          continue;
+        }
+
+        if (
+          reminder.scheduleType === "daily" &&
+          nextOccurrence.getTime() < now.getTime()
+        ) {
+          continue;
+        }
+
+        if (
+          reminder.scheduleType === "once" &&
+          nextOccurrence.getTime() < now.getTime()
+        ) {
+          setSettings((prev) => ({
+            ...prev,
+            customReminders: prev.customReminders.map((item) =>
+              item.id === reminder.id ? { ...item, enabled: false } : item,
+            ),
+          }));
+          continue;
+        }
+
+        const occurrenceKey = `${reminder.id}:${nextOccurrence.toISOString().slice(0, 16)}`;
+
+        if (!sentMilestonesRef.current[occurrenceKey]) {
+          sentMilestonesRef.current[occurrenceKey] = {
+            30: false,
+            15: false,
+            0: false,
+          };
+          previousMinutesLeftRef.current[occurrenceKey] = null;
+        }
+
+        const minutesLeft = Math.max(
+          0,
+          Math.ceil((nextOccurrence.getTime() - now.getTime()) / 60_000),
+        );
+
+        const previous = previousMinutesLeftRef.current[occurrenceKey];
+
+        for (const milestone of REMINDER_MILESTONES) {
+          const alreadySent =
+            sentMilestonesRef.current[occurrenceKey][milestone];
+          const crossed =
+            previous !== null &&
+            previous > milestone &&
+            minutesLeft <= milestone;
+          const exact = previous === null && minutesLeft === milestone;
+
+          if (alreadySent || (!crossed && !exact)) {
+            continue;
+          }
+
+          sentMilestonesRef.current[occurrenceKey][milestone] = true;
+
+          const selectedMessage =
+            reminder.messages && reminder.messages.length > 0
+              ? reminder.messages[
+                  Math.floor(Math.random() * reminder.messages.length)
+                ]
+              : reminder.description;
+
+          const actionText =
+            milestone === 30
+              ? "In 30 minutes"
+              : milestone === 15
+                ? "In 15 minutes"
+                : "Now";
+
+          const messageText =
+            milestone === 30
+              ? `Upcoming reminder: ${reminder.title} in 30 minutes.`
+              : milestone === 15
+                ? `Reminder coming up: ${reminder.title} in 15 minutes.`
+                : `It's time: ${reminder.title}. ${selectedMessage}`;
+
+          setToast({
+            kind: "custom-reminder",
+            label: reminder.title,
+            action: actionText,
+            message: messageText,
+          });
+
+          if (!mute) {
+            playChime();
+          }
+
+          if (milestone === 0) {
+            appendHistory(setSettings, reminder, actionText);
+            focusOrCreateSettingsWindow();
+
+            if (reminder.scheduleType === "once") {
+              setSettings((prev) => ({
+                ...prev,
+                customReminders: prev.customReminders.map((item) =>
+                  item.id === reminder.id ? { ...item, enabled: false } : item,
+                ),
+              }));
+            }
+          }
+
+          previousMinutesLeftRef.current[occurrenceKey] = minutesLeft;
+          return;
+        }
+
+        previousMinutesLeftRef.current[occurrenceKey] = minutesLeft;
+      }
+    }, 5_000);
+
+    return () => window.clearInterval(tick);
+  }, [
+    isPaused,
+    isSuppressed,
+    mute,
+    setSettings,
+    settings.customReminders,
+    setToast,
+    toast,
+  ]);
+};
