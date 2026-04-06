@@ -88,6 +88,7 @@ function App() {
     breakStates,
     setBreakStates,
     settings,
+    setSettings,
     isPaused,
     isSuppressed,
   });

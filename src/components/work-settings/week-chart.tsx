@@ -67,12 +67,17 @@ export function WeekChart({ dailyLogs, workHoursGoal }: Props) {
       ) : (
         <div className="flex items-end justify-between h-48 gap-3 px-2 sm:px-6">
           {weekData.map((day) => (
-            <div key={day.name} className="flex-1 flex flex-col items-center gap-3 h-full">
-              <div className="w-full bg-accent rounded-t-lg relative h-full flex flex-col justify-end overflow-hidden group">
+            <div
+              key={day.name}
+              className="flex-1 flex flex-col items-center gap-3 h-full"
+            >
+              <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-t-lg relative h-full flex flex-col justify-end overflow-hidden group">
                 {!day.isFuture && (
                   <div
-                    className={`w-full transition-all duration-500 ${day.isToday ? "bg-primary" : "bg-primary/60 hover:bg-primary/80"}`}
-                    style={{ height: `${Math.min(100, Math.max(4, (day.hours / Math.max(8, maxDailyGoal)) * 100))}%` }}
+                    className={`w-full transition-all duration-500 ${day.isToday ? "bg-gradient-to-t from-green-500 to-emearald-600" : "bg-gradient-to-t from-orange-400 to-yellow-500 hover:from-orange-500 hover:to-yellow-600"}`}
+                    style={{
+                      height: `${Math.min(100, Math.max(4, (day.hours / Math.max(8, maxDailyGoal)) * 100))}%`,
+                    }}
                   ></div>
                 )}
                 {day.hours > 0 && (
@@ -81,7 +86,9 @@ export function WeekChart({ dailyLogs, workHoursGoal }: Props) {
                   </div>
                 )}
               </div>
-              <span className={`text-[10px] font-bold ${day.isToday ? "text-primary" : "text-muted-foreground"}`}>
+              <span
+                className={`text-[10px] font-bold ${day.isToday ? "text-primary" : "text-muted-foreground"}`}
+              >
                 {day.name}
               </span>
             </div>

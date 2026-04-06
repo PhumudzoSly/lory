@@ -12,6 +12,25 @@ type Props = {
 
 const PRESET_GOALS = [30, 35, 40, 45];
 
+const getPresetColor = (hours: number, isSelected: boolean) => {
+  if (!isSelected) {
+    return "bg-muted text-muted-foreground hover:bg-muted/80";
+  }
+
+  switch (hours) {
+    case 30:
+      return "bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-100";
+    case 35:
+      return "bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-100";
+    case 40:
+      return "bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-100";
+    case 45:
+      return "bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-100";
+    default:
+      return "bg-primary text-primary-foreground";
+  }
+};
+
 export function GoalCard({
   workHoursGoal,
   currentWeekHours,
@@ -71,9 +90,9 @@ export function GoalCard({
               </span>
             </span>
           </div>
-          <div className="h-3 w-full bg-accent rounded-full overflow-hidden">
+          <div className="h-5 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-primary rounded-full transition-all duration-1000"
+              className="h-full bg-gradient-to-r from-orange-500 to-yellow-200 rounded-full transition-all duration-1000 animate-pulse"
               style={{ width: `${percentComplete}%` }}
             />
           </div>
@@ -89,29 +108,44 @@ export function GoalCard({
                 <button
                   key={preset}
                   onClick={() => setGoal(preset)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                    workHoursGoal === preset
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${getPresetColor(
+                    preset,
+                    workHoursGoal === preset,
+                  )}`}
                 >
                   {preset}h
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-muted-foreground">
                 Custom:
               </span>
-              <Input
-                type="number"
-                min="1"
-                max="100"
-                value={customInput}
-                onChange={handleCustomChange}
-                onBlur={handleCustomBlur}
-                className="w-24 h-10 text-center font-bold rounded-lg"
-              />
+              <div className="flex items-center gap-2 bg-muted/50 rounded-xl p-1">
+                <button
+                  onClick={() => setGoal(Math.max(1, workHoursGoal - 1))}
+                  className="w-9 h-9 rounded-lg bg-background hover:bg-accent transition-colors flex items-center justify-center text-foreground font-bold text-lg shadow-sm hover:shadow active:scale-95 transition-transform"
+                  aria-label="Decrease hours"
+                >
+                  −
+                </button>
+                <Input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={customInput}
+                  onChange={handleCustomChange}
+                  onBlur={handleCustomBlur}
+                  className="w-20 h-9 text-center font-bold rounded-lg bg-background border-none shadow-sm"
+                />
+                <button
+                  onClick={() => setGoal(Math.min(100, workHoursGoal + 1))}
+                  className="w-9 h-9 rounded-lg bg-background hover:bg-accent transition-colors flex items-center justify-center text-foreground font-bold text-lg shadow-sm hover:shadow active:scale-95 transition-transform"
+                  aria-label="Increase hours"
+                >
+                  +
+                </button>
+              </div>
               <span className="text-sm font-medium text-muted-foreground">
                 hours
               </span>

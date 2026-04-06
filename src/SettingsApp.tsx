@@ -25,6 +25,23 @@ export default function SettingsApp() {
     void syncSettings();
   }, [settings]);
 
+  // Pick up lastFiredAt updates written by the buddy window (separate WebviewWindow)
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key !== APP_STORAGE_KEY || !e.newValue) return;
+      try {
+        const parsed = JSON.parse(e.newValue) as Partial<AppSettings>;
+        if (parsed.lastFiredAt) {
+          setSettings((prev) => ({ ...prev, lastFiredAt: parsed.lastFiredAt! }));
+        }
+      } catch {
+        // ignore malformed data
+      }
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
   const skinSwatchClass: Record<BuddySkin, string> = {
     sunny: "bg-gradient-to-br from-amber-200 to-orange-300",
     mint: "bg-gradient-to-br from-emerald-100 to-emerald-300",

@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { AppSettings } from "../../lib/buddyConfig";
 import { TodaySession } from "./today-session";
-import { WeekChart } from "./week-chart";
-import { HistoryChart } from "./history-chart";
 import { GoalCard } from "./goal-card";
+import { UpcomingReminders } from "./upcoming-reminders";
 
 type Props = {
   settings: AppSettings;
@@ -73,14 +72,7 @@ export function WorkSettings({ settings, setSettings }: Props) {
             setSettings={setSettings}
           />
 
-          <div className="space-y-8">
-            <WeekChart
-              dailyLogs={settings.dailyLogs}
-              workHoursGoal={settings.workHoursGoal}
-              currentWeekHours={currentWeekHours}
-            />
-            <HistoryChart dailyLogs={settings.dailyLogs} />
-          </div>
+          <UpcomingReminders settings={settings} />
         </div>
       </div>
     </div>

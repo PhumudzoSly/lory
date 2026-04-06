@@ -52,7 +52,7 @@ export default function NavMenu<T extends string>({
                     className={cn(
                       "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
                       activeId === item.id
-                        ? "bg-linear-60 from-emerald-400 to-emerald-800 text-primary"
+                        ? "bg-linear-60 from-emerald-700 to-green-300 text-primary"
                         : "text-muted-foreground",
                     )}
                   >

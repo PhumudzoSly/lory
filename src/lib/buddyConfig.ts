@@ -57,6 +57,7 @@ export type AppSettings = {
   workDays: WorkDay[];
   autoWorkLogging: boolean;
   dailyLogs: Record<string, DailyWorkLog>;
+  lastFiredAt: Partial<Record<BreakType, number>>; // epoch ms, written by scheduler when a break fires
 };
 
 export const BUDDY_SKINS: Array<{ id: BuddySkin; label: string }> = [
@@ -215,6 +216,7 @@ export const buildDefaultSettings = (): AppSettings => ({
   workDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
   autoWorkLogging: true,
   dailyLogs: {},
+  lastFiredAt: {},
 });
 
 const TIME_RE = /^\d{2}:\d{2}$/;

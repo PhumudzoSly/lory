@@ -50,10 +50,16 @@ export function WellbeingSettings({ settings, setSettings }: Props) {
   return (
     <>
       <header className="mb-12 max-w-4xl">
-        <h2 className="text-4xl font-extrabold text-foreground tracking-tight mb-3">
-          Wellbeing Sanctuary
+        <h2 className="mb-3 flex flex-wrap items-center gap-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+          <span className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Your Wellbeing
+          </span>{" "}
+          -
+          <span className="inline-flex items-center rounded-full border border-emerald-300/60 bg-linear-to-r from-green-100 to-emerald-100 px-3 py-1 text-sm font-black uppercase tracking-wide text-emerald-900 shadow-sm sm:text-base">
+            Stay Healthy
+          </span>
         </h2>
-        <p className="text-muted-foreground text-lg">
+        <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
           Customize your digital environment. Each routine below is designed to
           maintain your physical and mental clarity throughout the workday.
         </p>
@@ -100,6 +106,7 @@ export function WellbeingSettings({ settings, setSettings }: Props) {
 
           <FullReset
             settings={settings}
+            lastFiredAt={settings.lastFiredAt?.full}
             updateInterval={updateInterval}
             toggleEnabled={toggleEnabled}
           />

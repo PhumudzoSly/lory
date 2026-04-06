@@ -18,6 +18,7 @@ type UseBreakReminderSchedulerParams = {
   breakStates: Record<BreakType, BreakState>;
   setBreakStates: Dispatch<SetStateAction<Record<BreakType, BreakState>>>;
   settings: AppSettings;
+  setSettings: Dispatch<SetStateAction<AppSettings>>;
   isPaused: boolean;
   isSuppressed: boolean;
 };
@@ -28,6 +29,7 @@ export const useBreakReminderScheduler = ({
   breakStates,
   setBreakStates,
   settings,
+  setSettings,
   isPaused,
   isSuppressed,
 }: UseBreakReminderSchedulerParams): void => {
@@ -77,6 +79,15 @@ export const useBreakReminderScheduler = ({
         }
         return copy;
       });
+
+      // Record when this break last fired so the settings window can compute countdowns
+      setSettings((prev) => ({
+        ...prev,
+        lastFiredAt: {
+          ...prev.lastFiredAt,
+          [nextType]: now,
+        },
+      }));
     }, 1_000);
 
     return () => window.clearInterval(tick);
@@ -86,5 +97,6 @@ export const useBreakReminderScheduler = ({
     isSuppressed,
     settings,
     setBreakStates,
+    setSettings,
   ]);
 };
