@@ -1,12 +1,16 @@
 import { useEffect, useRef } from "react";
-import type { Dispatch, SetStateAction } from "react";
-import type { ToastState, WorkReminderMilestone } from "../types/toast";
-import {
-  WORK_REMINDER_MILESTONES,
-  createWorkReminderToast,
-  localDateKey,
-} from "../lib/workReminders";
+type WorkReminderMilestone = 30 | 15 | 0;
+
+const WORK_REMINDER_MILESTONES: WorkReminderMilestone[] = [30, 15, 0];
+
+const localDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 import { playChime } from "../lib/sound";
+import { sendNativeNotification } from "../lib/notification";
 
 type UseWorkReminderSchedulerParams = {
   workStartTime: string;
@@ -14,8 +18,24 @@ type UseWorkReminderSchedulerParams = {
   mute: boolean;
   isPaused: boolean;
   isSuppressed: boolean;
-  toast: ToastState | null;
-  setToast: Dispatch<SetStateAction<ToastState | null>>;
+};
+
+const WORK_NOTIFICATION: Record<
+  WorkReminderMilestone,
+  { title: string; body: string }
+> = {
+  30: {
+    title: "Workday Check-In",
+    body: "Only 30 minutes left in your workday. Start wrapping up calmly.",
+  },
+  15: {
+    title: "Almost Done",
+    body: "15 minutes to go. Pick a stopping point and prepare to log off.",
+  },
+  0: {
+    title: "Clock-Out Time",
+    body: "Work time is up. Breathe a bit and touch some grass.",
+  },
 };
 
 export const useWorkReminderScheduler = ({
@@ -24,8 +44,6 @@ export const useWorkReminderScheduler = ({
   mute,
   isPaused,
   isSuppressed,
-  toast,
-  setToast,
 }: UseWorkReminderSchedulerParams): void => {
   const workReminderDayRef = useRef(localDateKey(new Date()));
   const workReminderSentRef = useRef<Record<WorkReminderMilestone, boolean>>({
@@ -94,7 +112,7 @@ export const useWorkReminderScheduler = ({
         previousWorkMinutesLeftRef.current = currentMinutesLeft;
       }
 
-      if (toast || isPaused || isSuppressed) {
+      if (isPaused || isSuppressed) {
         return;
       }
 
@@ -104,7 +122,8 @@ export const useWorkReminderScheduler = ({
       }
 
       workReminderSentRef.current[nextMilestone] = true;
-      setToast(createWorkReminderToast(nextMilestone));
+      const { title, body } = WORK_NOTIFICATION[nextMilestone];
+      void sendNativeNotification(title, body);
 
       if (!mute) {
         playChime();
@@ -112,13 +131,5 @@ export const useWorkReminderScheduler = ({
     }, 5_000);
 
     return () => window.clearInterval(tick);
-  }, [
-    isPaused,
-    isSuppressed,
-    mute,
-    setToast,
-    toast,
-    workEndTime,
-    workStartTime,
-  ]);
+  }, [isPaused, isSuppressed, mute, workEndTime, workStartTime]);
 };

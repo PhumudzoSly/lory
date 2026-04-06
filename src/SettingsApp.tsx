@@ -1,29 +1,13 @@
 import { useEffect, useState } from "react";
 import { emit } from "@tauri-apps/api/event";
 import { load as loadStore } from "@tauri-apps/plugin-store";
-import {
-  buildDefaultSettings,
-  type AppSettings,
-  type BuddySkin,
-} from "./lib/buddyConfig";
+import { type AppSettings, type BuddySkin } from "./lib/buddyConfig";
+import { readInitialSettings } from "./lib/settingsStorage";
 import Appbar from "./components/sidebar/app-bar";
 
 const APP_STORAGE_KEY = "Lory.settings.v1";
 const STORE_FILE = "Lory.json";
 const STORE_SETTINGS_KEY = "settings.data";
-
-function readInitialSettings(): AppSettings {
-  const fallback = buildDefaultSettings();
-  const raw = window.localStorage.getItem(APP_STORAGE_KEY);
-  if (!raw) {
-    return fallback;
-  }
-  try {
-    return { ...fallback, ...JSON.parse(raw) } as AppSettings;
-  } catch {
-    return fallback;
-  }
-}
 
 export default function SettingsApp() {
   const [settings, setSettings] = useState<AppSettings>(readInitialSettings);

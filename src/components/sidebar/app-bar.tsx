@@ -3,10 +3,15 @@ import { AppSidebar } from "./app-sidebar";
 import { SidebarInset, SidebarProvider } from "../ui/sidebar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { WorkSettings } from "../WorkSettings";
+import { WorkSettings } from "../work-settings";
 import { WellbeingSettings } from "../WellbeingSettings";
 import { ReminderSettings } from "../ReminderSettings";
-import { BREAK_META, type AppSettings, type BuddySkin, type BreakType } from "../../lib/buddyConfig";
+import {
+  BREAK_META,
+  type AppSettings,
+  type BuddySkin,
+  type BreakType,
+} from "../../lib/buddyConfig";
 import type { SidebarSection } from "./app-sidebar";
 
 type AppbarProps = {
@@ -138,27 +143,30 @@ const Appbar = ({ settings, setSettings, skinSwatchClass }: AppbarProps) => {
                   Test Reminders
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
-                  {(Object.keys(settings.breaks) as BreakType[]).map((breakType) => {
-                    const meta = BREAK_META[breakType];
-                    return (
-                      <Button
-                        key={breakType}
-                        type="button"
-                        variant="outline"
-                        onClick={async () => {
-                          const { emit } = await import("@tauri-apps/api/event");
-                          const { getRandomMessage } = await import("../../lib/buddyConfig");
-                          emit("test-toast", {
-                            kind: "break",
-                            breakType: breakType,
-                            message: getRandomMessage(breakType),
-                          });
-                        }}
-                      >
-                        Trigger {meta.label}
-                      </Button>
-                    );
-                  })}
+                  {(Object.keys(settings.breaks) as BreakType[]).map(
+                    (breakType) => {
+                      const meta = BREAK_META[breakType];
+                      return (
+                        <Button
+                          key={breakType}
+                          type="button"
+                          variant="outline"
+                          onClick={async () => {
+                            const { getRandomMessage } =
+                              await import("../../lib/buddyConfig");
+                            const { sendNativeNotification } =
+                              await import("../../lib/notification");
+                            await sendNativeNotification(
+                              meta.label,
+                              getRandomMessage(breakType),
+                            );
+                          }}
+                        >
+                          Trigger {meta.label}
+                        </Button>
+                      );
+                    },
+                  )}
                 </div>
               </section>
             </div>

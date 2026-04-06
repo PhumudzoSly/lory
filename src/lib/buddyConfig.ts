@@ -32,6 +32,14 @@ export type CustomReminder = {
   messages?: string[]; // For roulette functionality
 };
 
+export type DailyWorkLog = {
+  date: string;      // ISO date "2026-04-06"
+  day: string;       // "Sunday"
+  startTime: string; // "09:00"
+  endTime: string;   // "17:00"
+  hours: number;     // (endTime - startTime) in hours, always >= 0
+};
+
 export type AppSettings = {
   breaks: Record<BreakType, BreakSetting>;
   customReminders: CustomReminder[];
@@ -41,10 +49,10 @@ export type AppSettings = {
   autoPauseFullscreen: boolean;
   buddyName: string;
   buddySkin: BuddySkin;
-  workStartTime: string;
-  workEndTime: string;
+  workStartTime: string; // global default, kept in sync with today's log
+  workEndTime: string;   // global default, kept in sync with today's log
   workHoursGoal: number;
-  dailyLogs: Record<string, number>;
+  dailyLogs: Record<string, DailyWorkLog>;
 };
 
 export const BUDDY_SKINS: Array<{ id: BuddySkin; label: string }> = [
@@ -198,6 +206,64 @@ export const buildDefaultSettings = (): AppSettings => ({
   workHoursGoal: 40,
   dailyLogs: {},
 });
+
+const TIME_RE = /^\d{2}:\d{2}$/;
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+function computeHours(startTime: string, endTime: string): number {
+  const [startH, startM] = startTime.split(":").map(Number);
+  const [endH, endM] = endTime.split(":").map(Number);
+  return Math.max(0, (endH * 60 + endM - startH * 60 - startM) / 60);
+}
+
+function deriveEndTime(startTime: string, hours: number): string {
+  const [startH, startM] = startTime.split(":").map(Number);
+  const totalMins = startH * 60 + startM + Math.round(Math.max(0, hours) * 60);
+  const h = Math.floor(totalMins / 60) % 24;
+  const m = totalMins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Migrates raw persisted data (potentially old format) into a valid AppSettings.
+ * Safe to call on already-migrated settings (idempotent).
+ */
+export function migrateLegacySettings(raw: Record<string, unknown>): AppSettings {
+  const base = buildDefaultSettings();
+  const merged = { ...base, ...(raw as Partial<AppSettings>) };
+
+  const defaultStart =
+    typeof raw.workStartTime === "string" && TIME_RE.test(raw.workStartTime)
+      ? raw.workStartTime
+      : base.workStartTime;
+
+  const rawLogs = raw.dailyLogs as Record<string, unknown> | undefined;
+  if (rawLogs && typeof rawLogs === "object") {
+    const migratedLogs: Record<string, DailyWorkLog> = {};
+
+    for (const [dateStr, value] of Object.entries(rawLogs)) {
+      if (typeof value === "number" && Number.isFinite(value)) {
+        const date = new Date(dateStr);
+        if (Number.isNaN(date.getTime())) continue;
+        migratedLogs[dateStr] = {
+          date: dateStr,
+          day: DAY_NAMES[date.getDay()] ?? "Unknown",
+          startTime: defaultStart,
+          endTime: deriveEndTime(defaultStart, value),
+          hours: Math.max(0, value),
+        };
+      } else if (value && typeof value === "object" && "hours" in value) {
+        migratedLogs[dateStr] = value as DailyWorkLog;
+      }
+    }
+
+    merged.dailyLogs = migratedLogs;
+  }
+
+  return merged;
+}
+
+export { computeHours, DAY_NAMES };
 
 export const getRandomMessage = (breakType: BreakType): string => {
   const pool = MESSAGES[breakType];

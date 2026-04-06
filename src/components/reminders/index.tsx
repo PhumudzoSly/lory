@@ -13,11 +13,11 @@ import type {
   CustomReminder,
   ReminderPriority,
   ReminderScheduleType,
-} from "../lib/buddyConfig";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Textarea } from "./ui/textarea";
-import AddNewReminder from "./reminders/add-new";
+} from "../../lib/buddyConfig";
+import { Button } from "./../ui/button";
+import { Input } from "./../ui/input";
+import { Textarea } from "./../ui/textarea";
+import AddNewReminder from "./add-new";
 
 type ReminderSettingsProps = {
   settings: AppSettings;
@@ -121,10 +121,7 @@ const ReminderIcon = ({
   }
 };
 
-export function ReminderSettings({
-  settings,
-  setSettings,
-}: ReminderSettingsProps) {
+const ReminderSettings = ({ settings, setSettings }: ReminderSettingsProps) => {
   const [expandedReminderId, setExpandedReminderId] = useState<string | null>(
     null,
   );
@@ -770,4 +767,6 @@ export function ReminderSettings({
       </section>
     </>
   );
-}
+};
+
+export default ReminderSettings;

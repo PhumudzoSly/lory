@@ -3,11 +3,12 @@ import type { Dispatch, SetStateAction } from "react";
 import {
   BREAK_META,
   getRandomMessage,
+  nextDueTimestamp,
   type AppSettings,
   type BreakType,
 } from "../lib/buddyConfig";
 import { playChime } from "../lib/sound";
-import type { ToastState } from "../types/toast";
+import { sendNativeNotification } from "../lib/notification";
 
 type BreakState = {
   nextDueAt: number;
@@ -19,8 +20,6 @@ type UseBreakReminderSchedulerParams = {
   settings: AppSettings;
   isPaused: boolean;
   isSuppressed: boolean;
-  toast: ToastState | null;
-  setToast: Dispatch<SetStateAction<ToastState | null>>;
 };
 
 const OVERLAP_DEFER_MS = 2 * 60 * 1_000;
@@ -31,12 +30,10 @@ export const useBreakReminderScheduler = ({
   settings,
   isPaused,
   isSuppressed,
-  toast,
-  setToast,
 }: UseBreakReminderSchedulerParams): void => {
   useEffect(() => {
     const tick = window.setInterval(() => {
-      if (isPaused || isSuppressed || toast) {
+      if (isPaused || isSuppressed) {
         return;
       }
 
@@ -57,11 +54,9 @@ export const useBreakReminderScheduler = ({
       }
 
       const nextType = due[0];
-      setToast({
-        kind: "break",
-        breakType: nextType,
-        message: getRandomMessage(nextType),
-      });
+      const meta = BREAK_META[nextType];
+
+      void sendNativeNotification(meta.label, getRandomMessage(nextType));
 
       if (!settings.mute) {
         playChime();
@@ -69,6 +64,14 @@ export const useBreakReminderScheduler = ({
 
       setBreakStates((prev) => {
         const copy = { ...prev };
+        // Reset the fired break timer
+        copy[nextType] = {
+          nextDueAt: nextDueTimestamp(
+            nextType,
+            settings.breaks[nextType].intervalMinutes,
+          ),
+        };
+        // Defer overlapping due breaks
         for (const breakType of due.slice(1)) {
           copy[breakType] = { nextDueAt: now + OVERLAP_DEFER_MS };
         }
@@ -82,8 +85,6 @@ export const useBreakReminderScheduler = ({
     isPaused,
     isSuppressed,
     settings,
-    toast,
     setBreakStates,
-    setToast,
   ]);
 };

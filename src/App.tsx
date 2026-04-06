@@ -3,7 +3,6 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { BuddyCharacter } from "./components/BuddyCharacter";
-import { BreakToast } from "./components/BreakToast";
 import {
   BREAK_META,
   nextDueTimestamp,
@@ -16,16 +15,13 @@ import { useWindowPersistence } from "./hooks/useWindowPersistence";
 import { useBreakReminderScheduler } from "./hooks/useBreakReminderScheduler";
 import { useWorkReminderScheduler } from "./hooks/useWorkReminderScheduler";
 import { useCustomReminderScheduler } from "./hooks/useCustomReminderScheduler";
-import type { ToastState } from "./types/toast";
 import "./App.css";
 
-type Emotion = "idle" | "nudging" | "happy" | "concerned" | "sleeping";
+type Emotion = "idle" | "sleeping";
 
 type BreakState = {
   nextDueAt: number;
 };
-
-const TOAST_TIMEOUT_MS = 15_000;
 
 function App() {
   const appWindow = useMemo(() => getCurrentWindow(), []);
@@ -74,46 +70,24 @@ function App() {
       },
     }),
   );
-  const [toast, setToast] = useState<ToastState | null>(null);
-
-  useEffect(() => {
-    let unlistenFn: () => void;
-    import("@tauri-apps/api/event").then(({ listen }) => {
-      listen("test-toast", (event: any) => {
-        setToast(event.payload as ToastState);
-        if (!settings.mute) {
-          import("./lib/sound").then((m) => m.playChime());
-        }
-      }).then(unlisten => {
-        unlistenFn = unlisten;
-      });
-    });
-    return () => {
-      if (unlistenFn) unlistenFn();
-    };
-  }, [settings.mute]);
 
   const [isFullscreenSuppressed, setIsFullscreenSuppressed] = useState(false);
   const [dnd, setDnd] = useState(false);
   const [snoozeUntil, setSnoozeUntil] = useState<number | null>(null);
-  const [dismissStreak, setDismissStreak] = useState(0);
-  const [happyUntil, setHappyUntil] = useState<number | null>(null);
 
   const isPaused = dnd || (snoozeUntil !== null && snoozeUntil > Date.now());
   const isSuppressed = settings.autoPauseFullscreen && isFullscreenSuppressed;
 
-  const expansionMode = toast !== null ? "toast" : "compact";
+  const emotion: Emotion = isPaused || isSuppressed ? "sleeping" : "idle";
 
   useSettingsSync({ settings, setSettings });
-  useWindowPersistence({ appWindow, expansionMode, setSettings });
+  useWindowPersistence({ appWindow, setSettings });
   useBreakReminderScheduler({
     breakStates,
     setBreakStates,
     settings,
     isPaused,
     isSuppressed,
-    toast,
-    setToast,
   });
   useWorkReminderScheduler({
     workStartTime: settings.workStartTime,
@@ -121,35 +95,14 @@ function App() {
     mute: settings.mute,
     isPaused,
     isSuppressed,
-    toast,
-    setToast,
   });
-
   useCustomReminderScheduler({
     settings,
     setSettings,
     mute: settings.mute,
     isPaused,
     isSuppressed,
-    toast,
-    setToast,
   });
-
-  const emotion: Emotion = useMemo(() => {
-    if (isPaused || isSuppressed) {
-      return "sleeping";
-    }
-    if (happyUntil !== null && happyUntil > Date.now()) {
-      return "happy";
-    }
-    if (dismissStreak >= 3) {
-      return "concerned";
-    }
-    if (toast) {
-      return "nudging";
-    }
-    return "idle";
-  }, [dismissStreak, happyUntil, isPaused, isSuppressed, toast]);
 
   const openSettingsWindow = useCallback(async () => {
     const existing = await WebviewWindow.getByLabel("settings");
@@ -190,30 +143,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!toast) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      if (toast.kind === "break") {
-        setDismissStreak((prev) => prev + 1);
-        setBreakStates((prev) => ({
-          ...prev,
-          [toast.breakType]: {
-            nextDueAt: nextDueTimestamp(
-              toast.breakType,
-              settings.breaks[toast.breakType].intervalMinutes,
-            ),
-          },
-        }));
-      }
-      setToast(null);
-    }, TOAST_TIMEOUT_MS);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [settings.breaks, toast]);
-
-  useEffect(() => {
     if (snoozeUntil === null) {
       return;
     }
@@ -225,53 +154,9 @@ function App() {
     return () => window.clearInterval(timeoutId);
   }, [snoozeUntil]);
 
-  const resetTimerFor = useCallback(
-    (breakType: BreakType) => {
-      setBreakStates((prev) => ({
-        ...prev,
-        [breakType]: {
-          nextDueAt: nextDueTimestamp(
-            breakType,
-            settings.breaks[breakType].intervalMinutes,
-          ),
-        },
-      }));
-    },
-    [settings.breaks],
-  );
-
-  const dismissToast = useCallback(() => {
-    if (!toast) {
-      return;
-    }
-    if (toast.kind === "work-reminder" || toast.kind === "custom-reminder") {
-      setToast(null);
-      return;
-    }
-    setDismissStreak((prev) => prev + 1);
-    resetTimerFor(toast.breakType);
-    setToast(null);
-  }, [resetTimerFor, toast]);
-
-  const completeToast = useCallback(() => {
-    if (!toast) {
-      return;
-    }
-    if (toast.kind === "work-reminder" || toast.kind === "custom-reminder") {
-      setHappyUntil(Date.now() + 4_000);
-      setToast(null);
-      return;
-    }
-    setDismissStreak(0);
-    setHappyUntil(Date.now() + 4_000);
-    resetTimerFor(toast.breakType);
-    setToast(null);
-  }, [resetTimerFor, toast]);
-
   const snooze = useCallback((minutes: number) => {
     setDnd(false);
     setSnoozeUntil(Date.now() + minutes * 60_000);
-    setToast(null);
   }, []);
 
   const handleBuddyPointerDown = (
@@ -351,7 +236,6 @@ function App() {
                       action: () => {
                         setDnd((prev) => !prev);
                         setSnoozeUntil(null);
-                        setToast(null);
                       },
                     },
                     {
@@ -372,27 +256,6 @@ function App() {
           />
         </div>
       </div>
-
-      {toast && (
-        <div className="absolute bottom-[84px] left-0 ml-2 mb-2">
-          <BreakToast
-            breakType={toast.kind === "break" ? toast.breakType : "work"}
-            label={
-              toast.kind === "break"
-                ? BREAK_META[toast.breakType].label
-                : toast.label
-            }
-            action={
-              toast.kind === "break"
-                ? BREAK_META[toast.breakType].action
-                : toast.action
-            }
-            message={toast.message}
-            onDone={completeToast}
-            onDismiss={dismissToast}
-          />
-        </div>
-      )}
     </div>
   );
 }

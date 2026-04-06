@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { ToastState } from "../types/toast";
 import type {
   AppSettings,
   CustomReminder,
   CustomReminderHistoryEntry,
 } from "../lib/buddyConfig";
 import { playChime } from "../lib/sound";
+import { sendNativeNotification } from "../lib/notification";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 
 type UseCustomReminderSchedulerParams = {
@@ -15,8 +15,6 @@ type UseCustomReminderSchedulerParams = {
   mute: boolean;
   isPaused: boolean;
   isSuppressed: boolean;
-  toast: ToastState | null;
-  setToast: Dispatch<SetStateAction<ToastState | null>>;
 };
 
 const REMINDER_MILESTONES: Array<30 | 15 | 0> = [30, 15, 0];
@@ -131,8 +129,6 @@ export const useCustomReminderScheduler = ({
   mute,
   isPaused,
   isSuppressed,
-  toast,
-  setToast,
 }: UseCustomReminderSchedulerParams): void => {
   const dayKeyRef = useRef(localDateKey(new Date()));
   const sentMilestonesRef = useRef<Record<string, Record<number, boolean>>>({});
@@ -149,7 +145,7 @@ export const useCustomReminderScheduler = ({
         previousMinutesLeftRef.current = {};
       }
 
-      if (toast || isPaused || isSuppressed) {
+      if (isPaused || isSuppressed) {
         return;
       }
 
@@ -223,33 +219,28 @@ export const useCustomReminderScheduler = ({
                 ]
               : reminder.description;
 
-          const actionText =
+          const notifTitle =
             milestone === 30
-              ? "In 30 minutes"
+              ? `Upcoming: ${reminder.title}`
               : milestone === 15
-                ? "In 15 minutes"
-                : "Now";
+                ? `Coming up: ${reminder.title}`
+                : reminder.title;
 
-          const messageText =
+          const notifBody =
             milestone === 30
-              ? `Upcoming reminder: ${reminder.title} in 30 minutes.`
+              ? `${reminder.title} in 30 minutes.`
               : milestone === 15
-                ? `Reminder coming up: ${reminder.title} in 15 minutes.`
-                : `It's time: ${reminder.title}. ${selectedMessage}`;
+                ? `${reminder.title} in 15 minutes.`
+                : `It's time. ${selectedMessage}`;
 
-          setToast({
-            kind: "custom-reminder",
-            label: reminder.title,
-            action: actionText,
-            message: messageText,
-          });
+          void sendNativeNotification(notifTitle, notifBody);
 
           if (!mute) {
             playChime();
           }
 
           if (milestone === 0) {
-            appendHistory(setSettings, reminder, actionText);
+            appendHistory(setSettings, reminder, "Now");
             focusOrCreateSettingsWindow();
 
             if (reminder.scheduleType === "once") {
@@ -277,7 +268,5 @@ export const useCustomReminderScheduler = ({
     mute,
     setSettings,
     settings.customReminders,
-    setToast,
-    toast,
   ]);
 };
