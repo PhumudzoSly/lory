@@ -4,7 +4,7 @@ import { SidebarInset, SidebarProvider } from "../ui/sidebar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { WorkSettings } from "../work-settings";
-import { WellbeingSettings } from "../WellbeingSettings";
+import { WellbeingSettings } from "../wellbeing-settings";
 import { ReminderSettings } from "../ReminderSettings";
 import {
   BREAK_META,

@@ -24,7 +24,7 @@ const STORE_WINDOW_POSITION_KEY = "window.position";
 const STORE_SETTINGS_KEY = "settings.data";
 const WINDOW_MARGIN = 16;
 
-const WINDOW_SIZE = { width: 84, height: 84 };
+const WINDOW_SIZE = { width: 56, height: 56 };
 
 export const useWindowPersistence = ({
   appWindow,
@@ -60,7 +60,8 @@ export const useWindowPersistence = ({
       });
       storeRef.current = store;
 
-      const savedSettings = await store.get<Record<string, unknown>>(STORE_SETTINGS_KEY);
+      const savedSettings =
+        await store.get<Record<string, unknown>>(STORE_SETTINGS_KEY);
       if (savedSettings) {
         setSettings(migrateLegacySettings(savedSettings));
       }

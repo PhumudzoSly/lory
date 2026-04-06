@@ -196,8 +196,8 @@ function App() {
 
   return (
     <div className="relative h-full w-full">
-      <div className="absolute bottom-0 left-0 flex h-[84px] w-[84px] items-center justify-center">
-        <div ref={buddyRef} className="relative">
+      <div className="absolute bottom-0 left-0 flex h-14 w-14 items-center justify-center">
+        <div ref={buddyRef} className="relative h-14 w-14">
           <BuddyCharacter
             emotion={emotion}
             onPointerDown={handleBuddyPointerDown}

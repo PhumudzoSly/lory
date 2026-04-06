@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react"
+import { load as loadStore } from "@tauri-apps/plugin-store"
 
 type Theme = "dark" | "light" | "system"
 
@@ -20,15 +21,54 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
 
+const STORE_FILE = "Lory.json"
+const STORE_THEME_KEY = "settings.theme"
+
+const isTheme = (value: unknown): value is Theme =>
+  value === "light" || value === "dark" || value === "system"
+
 export function ThemeProvider({
   children,
   defaultTheme = "dark",
   storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  )
+  const [theme, setTheme] = useState<Theme>(() => {
+    const rawTheme = localStorage.getItem(storageKey)
+    return isTheme(rawTheme) ? rawTheme : defaultTheme
+  })
+
+  useEffect(() => {
+    let cancelled = false
+
+    const hydrateTheme = async () => {
+      try {
+        const store = await loadStore(STORE_FILE, {
+          defaults: {},
+          autoSave: true,
+        })
+
+        const persistedTheme = await store.get<Theme>(STORE_THEME_KEY)
+        if (cancelled) return
+
+        if (isTheme(persistedTheme)) {
+          setTheme(persistedTheme)
+          localStorage.setItem(storageKey, persistedTheme)
+          return
+        }
+
+        await store.set(STORE_THEME_KEY, theme)
+      } catch {
+        // Ignore store failures so web mode still works with localStorage.
+      }
+    }
+
+    void hydrateTheme()
+
+    return () => {
+      cancelled = true
+    }
+  }, [storageKey])
 
   useEffect(() => {
     const root = window.document.documentElement
@@ -48,10 +88,27 @@ export function ThemeProvider({
     root.classList.add(theme)
   }, [theme])
 
+  useEffect(() => {
+    localStorage.setItem(storageKey, theme)
+
+    const persistTheme = async () => {
+      try {
+        const store = await loadStore(STORE_FILE, {
+          defaults: {},
+          autoSave: true,
+        })
+        await store.set(STORE_THEME_KEY, theme)
+      } catch {
+        // Ignore store failures so localStorage remains the fallback.
+      }
+    }
+
+    void persistTheme()
+  }, [theme, storageKey])
+
   const value = {
     theme,
     setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
       setTheme(theme)
     },
   }

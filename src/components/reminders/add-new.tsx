@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const AddNewReminder = () => {
+export const AddNewReminder = () => {
   return (
     <div>
       <Dialog>

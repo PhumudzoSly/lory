@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { DailyWorkLog } from "../../lib/buddyConfig";
-import { Card, CardContent } from "../ui/card";
+import { IconHistory } from "@tabler/icons-react";
 
 type Props = {
   dailyLogs: Record<string, DailyWorkLog>;
@@ -38,28 +38,34 @@ export function HistoryChart({ dailyLogs }: Props) {
   }, [dailyLogs]);
 
   return (
-    <Card className="bg-card shadow-sm border rounded-2xl">
-      <CardContent className="p-8">
-        <div className="flex items-center justify-between mb-8">
-          <h4 className="font-bold text-lg text-foreground">Average Hours by Day (All Time)</h4>
-          <span className="text-xs text-muted-foreground font-medium">Historical</span>
+    <section className="bg-card shadow-sm border-none rounded-2xl p-8">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-8 gap-4">
+        <div>
+          <h4 className="font-bold text-lg text-foreground flex items-center gap-2 mb-2">
+            <IconHistory className="size-5 text-primary" />
+            Average Hours by Day (All Time)
+          </h4>
+          <p className="text-muted-foreground text-sm">
+            Discover your long-term patterns to optimize when you focus best.
+          </p>
         </div>
+        <span className="text-xs text-muted-foreground font-medium mt-1">Historical</span>
+      </div>
 
-        <div className="space-y-5">
-          {rows.map((row) => (
-            <div key={row.day} className="flex items-center gap-4 group">
-              <span className="w-12 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{row.day}</span>
-              <div className="flex-1 h-3 bg-accent rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary/60 group-hover:bg-primary transition-colors duration-500 rounded-full" 
-                  style={{ width: `${Math.max(2, (row.avg / maxAvg) * 100)}%` }}
-                ></div>
-              </div>
-              <span className="text-xs font-semibold w-10 text-right tabular-nums">{row.avg.toFixed(1)}h</span>
+      <div className="space-y-5">
+        {rows.map((row) => (
+          <div key={row.day} className="flex items-center gap-4 group">
+            <span className="w-12 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{row.day}</span>
+            <div className="flex-1 h-3 bg-accent rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary/60 group-hover:bg-primary transition-colors duration-500 rounded-full" 
+                style={{ width: `${Math.max(2, (row.avg / maxAvg) * 100)}%` }}
+              ></div>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            <span className="text-xs font-semibold w-10 text-right tabular-nums">{row.avg.toFixed(1)}h</span>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

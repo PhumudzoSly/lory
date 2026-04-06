@@ -39,6 +39,12 @@
   transform: translate(-50%, -50%) scale(0.95);
 }
 
+.buddy-character:focus,
+.buddy-character:focus-visible {
+  outline: none;
+  border: none;
+}
+
 .buddy-glass {
   content: "";
   position: absolute;
