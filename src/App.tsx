@@ -15,6 +15,7 @@ import { useWindowPersistence } from "./hooks/useWindowPersistence";
 import { useBreakReminderScheduler } from "./hooks/useBreakReminderScheduler";
 import { useWorkReminderScheduler } from "./hooks/useWorkReminderScheduler";
 import { useCustomReminderScheduler } from "./hooks/useCustomReminderScheduler";
+import { useAutomaticWorkLog } from "./hooks/useAutomaticWorkLog";
 import "./App.css";
 
 type Emotion = "idle" | "sleeping";
@@ -82,6 +83,7 @@ function App() {
 
   useSettingsSync({ settings, setSettings });
   useWindowPersistence({ appWindow, setSettings });
+  useAutomaticWorkLog({ settings, setSettings });
   useBreakReminderScheduler({
     breakStates,
     setBreakStates,
@@ -92,6 +94,7 @@ function App() {
   useWorkReminderScheduler({
     workStartTime: settings.workStartTime,
     workEndTime: settings.workEndTime,
+    workDays: settings.workDays,
     mute: settings.mute,
     isPaused,
     isSuppressed,

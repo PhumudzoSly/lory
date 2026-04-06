@@ -1,7 +1,18 @@
 import { useEffect, useRef } from "react";
+import type { WorkDay } from "../lib/buddyConfig";
 type WorkReminderMilestone = 30 | 15 | 0;
 
 const WORK_REMINDER_MILESTONES: WorkReminderMilestone[] = [30, 15, 0];
+
+const WORKDAY_TO_INDEX: Record<WorkDay, number> = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
 
 const localDateKey = (date: Date): string => {
   const year = date.getFullYear();
@@ -15,6 +26,7 @@ import { sendNativeNotification } from "../lib/notification";
 type UseWorkReminderSchedulerParams = {
   workStartTime: string;
   workEndTime: string;
+  workDays: WorkDay[];
   mute: boolean;
   isPaused: boolean;
   isSuppressed: boolean;
@@ -41,6 +53,7 @@ const WORK_NOTIFICATION: Record<
 export const useWorkReminderScheduler = ({
   workStartTime,
   workEndTime,
+  workDays,
   mute,
   isPaused,
   isSuppressed,
@@ -64,6 +77,17 @@ export const useWorkReminderScheduler = ({
         workReminderSentRef.current = { 30: false, 15: false, 0: false };
         workReminderPendingRef.current = [];
         previousWorkMinutesLeftRef.current = null;
+      }
+
+      // Check if today is a work day
+      const dayIndex = now.getDay();
+      const isWorkDay = workDays.some(
+        (wd) => WORKDAY_TO_INDEX[wd] === dayIndex,
+      );
+
+      if (!isWorkDay) {
+        previousWorkMinutesLeftRef.current = null;
+        return;
       }
 
       const [startHour, startMinute] = workStartTime.split(":").map(Number);
@@ -131,5 +155,5 @@ export const useWorkReminderScheduler = ({
     }, 5_000);
 
     return () => window.clearInterval(tick);
-  }, [isPaused, isSuppressed, mute, workEndTime, workStartTime]);
+  }, [isPaused, isSuppressed, mute, workDays, workEndTime, workStartTime]);
 };

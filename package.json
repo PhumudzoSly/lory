@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "assets:svg": "node scripts/generate-svg-assets.mjs",
+    "icons:generate": "pnpm assets:svg && pnpm tauri icon src-tauri/icons/icon.svg"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

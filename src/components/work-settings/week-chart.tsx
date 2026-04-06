@@ -30,6 +30,7 @@ export function WeekChart({ dailyLogs, workHoursGoal }: Props) {
   }, [dailyLogs]);
 
   const maxDailyGoal = workHoursGoal / 5;
+  const hasAnyData = weekData.some((day) => day.hours > 0);
 
   return (
     <section className="bg-card p-8 shadow-sm border-none rounded-2xl">
@@ -40,7 +41,7 @@ export function WeekChart({ dailyLogs, workHoursGoal }: Props) {
             Weekly Hours by Day
           </h4>
           <p className="text-muted-foreground text-sm">
-            Track your current week's actual hours against your target.
+            Track your current week against your target.
           </p>
         </div>
         <div className="flex gap-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
@@ -51,28 +52,42 @@ export function WeekChart({ dailyLogs, workHoursGoal }: Props) {
         </div>
       </div>
 
-      <div className="flex items-end justify-between h-48 gap-3 px-2 sm:px-6">
-        {weekData.map((day) => (
-          <div key={day.name} className="flex-1 flex flex-col items-center gap-3 h-full">
-            <div className="w-full bg-accent rounded-t-lg relative h-full flex flex-col justify-end overflow-hidden group">
-              {!day.isFuture && (
-                <div 
-                  className={`w-full transition-all duration-500 ${day.isToday ? 'bg-primary' : 'bg-primary/60 hover:bg-primary/80'}`} 
-                  style={{ height: `${Math.min(100, Math.max(4, (day.hours / Math.max(8, maxDailyGoal)) * 100))}%` }}
-                ></div>
-              )}
-              {day.hours > 0 && (
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold text-xs bg-black/10">
-                  {day.hours.toFixed(1)}
-                </div>
-              )}
-            </div>
-            <span className={`text-[10px] font-bold ${day.isToday ? 'text-primary' : 'text-muted-foreground'}`}>
-              {day.name}
-            </span>
+      {!hasAnyData ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+            <IconChartBar className="size-8 text-muted-foreground/50" />
           </div>
-        ))}
-      </div>
+          <p className="text-sm font-medium text-muted-foreground">
+            No work hours logged yet this week
+          </p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Hours will appear here as you work within your scheduled days
+          </p>
+        </div>
+      ) : (
+        <div className="flex items-end justify-between h-48 gap-3 px-2 sm:px-6">
+          {weekData.map((day) => (
+            <div key={day.name} className="flex-1 flex flex-col items-center gap-3 h-full">
+              <div className="w-full bg-accent rounded-t-lg relative h-full flex flex-col justify-end overflow-hidden group">
+                {!day.isFuture && (
+                  <div
+                    className={`w-full transition-all duration-500 ${day.isToday ? "bg-primary" : "bg-primary/60 hover:bg-primary/80"}`}
+                    style={{ height: `${Math.min(100, Math.max(4, (day.hours / Math.max(8, maxDailyGoal)) * 100))}%` }}
+                  ></div>
+                )}
+                {day.hours > 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold text-xs bg-black/10">
+                    {day.hours.toFixed(1)}
+                  </div>
+                )}
+              </div>
+              <span className={`text-[10px] font-bold ${day.isToday ? "text-primary" : "text-muted-foreground"}`}>
+                {day.name}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

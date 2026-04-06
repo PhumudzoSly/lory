@@ -30,6 +30,10 @@ export default function SettingsApp() {
     mint: "bg-gradient-to-br from-emerald-100 to-emerald-300",
     sky: "bg-gradient-to-br from-sky-100 to-blue-300",
     rose: "bg-gradient-to-br from-pink-100 to-rose-300",
+    lavender: "bg-gradient-to-br from-purple-100 to-purple-300",
+    peach: "bg-gradient-to-br from-orange-100 to-red-200",
+    slate: "bg-gradient-to-br from-slate-200 to-slate-400",
+    charcoal: "bg-gradient-to-br from-zinc-700 to-zinc-900",
   };
 
   return <Appbar settings={settings} setSettings={setSettings} skinSwatchClass={skinSwatchClass} />;

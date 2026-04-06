@@ -1,6 +1,8 @@
+import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { IconChartLine, IconMinus, IconPlus } from "@tabler/icons-react";
+import { IconChartLine } from "@tabler/icons-react";
 import type { AppSettings } from "../../lib/buddyConfig";
+import { Input } from "../ui/input";
 
 type Props = {
   workHoursGoal: number;
@@ -8,35 +10,56 @@ type Props = {
   setSettings: Dispatch<SetStateAction<AppSettings>>;
 };
 
+const PRESET_GOALS = [30, 35, 40, 45];
+
 export function GoalCard({
   workHoursGoal,
   currentWeekHours,
   setSettings,
 }: Props) {
+  const [customInput, setCustomInput] = useState(workHoursGoal.toString());
+
   const percentComplete = Math.min(
     100,
     Math.round((currentWeekHours / workHoursGoal) * 100),
   );
 
-  const updateGoal = (delta: number) => {
+  const setGoal = (value: number) => {
+    const clamped = Math.max(1, Math.min(100, value));
     setSettings((prev) => ({
       ...prev,
-      workHoursGoal: Math.max(1, prev.workHoursGoal + delta),
+      workHoursGoal: clamped,
     }));
+    setCustomInput(clamped.toString());
+  };
+
+  const handleCustomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomInput(e.target.value);
+  };
+
+  const handleCustomBlur = () => {
+    const parsed = parseInt(customInput, 10);
+    if (!Number.isNaN(parsed)) {
+      setGoal(parsed);
+    } else {
+      setCustomInput(workHoursGoal.toString());
+    }
   };
 
   return (
-    <section className="bg-card p-8 rounded-2xl shadow-sm border-none flex flex-col md:flex-row gap-10 items-center">
-      <div className="flex-1 w-full">
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-3 text-foreground">
+    <section className="bg-card p-8 rounded-2xl shadow-sm border-none">
+      <div className="mb-6">
+        <h3 className="text-xl font-bold mb-3 flex items-center gap-3 text-foreground">
           <IconChartLine className="size-6 text-primary" />
-          Work Hours Goal
+          Weekly Hours Goal
         </h3>
-        <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
-          Intentionally capping your work week prevents burnout. Lory will nudge
-          you to wrap up when you're nearing your target.
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Set a target to help maintain work-life balance.
         </p>
-        <div className="space-y-4 w-full">
+      </div>
+
+      <div className="space-y-6">
+        <div className="space-y-3">
           <div className="flex justify-between items-end">
             <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Weekly Progress
@@ -52,30 +75,49 @@ export function GoalCard({
             <div
               className="h-full bg-primary rounded-full transition-all duration-1000"
               style={{ width: `${percentComplete}%` }}
-            ></div>
+            />
           </div>
         </div>
-      </div>
 
-      <div className="w-32 h-32 flex-shrink-0 rounded-full border-8 border-primary/20 flex flex-col items-center justify-center relative bg-card shadow-sm">
-        <div
-          className="absolute -top-2 -right-2 bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-lg"
-          onClick={() => updateGoal(1)}
-        >
-          <IconPlus className="size-5" />
+        <div className="space-y-3">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Target Hours
+          </label>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex flex-wrap gap-2 mb-4">
+              {PRESET_GOALS.map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => setGoal(preset)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    workHoursGoal === preset
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {preset}h
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                Custom:
+              </span>
+              <Input
+                type="number"
+                min="1"
+                max="100"
+                value={customInput}
+                onChange={handleCustomChange}
+                onBlur={handleCustomBlur}
+                className="w-24 h-10 text-center font-bold rounded-lg"
+              />
+              <span className="text-sm font-medium text-muted-foreground">
+                hours
+              </span>
+            </div>
+          </div>
         </div>
-        <div
-          className="absolute -bottom-2 -left-2 bg-secondary text-secondary-foreground w-8 h-8 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-lg"
-          onClick={() => updateGoal(-1)}
-        >
-          <IconMinus className="size-5" />
-        </div>
-        <span className="text-4xl font-extrabold text-primary">
-          {workHoursGoal}
-        </span>
-        <span className="text-[10px] font-bold uppercase tracking-tighter text-muted-foreground">
-          Target
-        </span>
       </div>
     </section>
   );

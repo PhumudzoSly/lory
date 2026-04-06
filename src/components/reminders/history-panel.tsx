@@ -1,4 +1,3 @@
-import type { Dispatch, SetStateAction } from "react";
 import { IconHistory } from "@tabler/icons-react";
 import type { AppSettings } from "../../lib/buddyConfig";
 import { Button } from "../ui/button";

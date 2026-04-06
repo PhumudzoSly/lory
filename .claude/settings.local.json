@@ -3,7 +3,8 @@
     "allow": [
       "Bash(pnpm tsc:*)",
       "Bash(pnpm tauri:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git log:*)"
     ]
   }
 }

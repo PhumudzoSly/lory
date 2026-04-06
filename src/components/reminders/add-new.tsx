@@ -26,4 +26,3 @@ export const AddNewReminder = () => {
   );
 };
 
-export default AddNewReminder;

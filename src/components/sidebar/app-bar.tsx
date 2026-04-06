@@ -2,10 +2,10 @@ import { useState } from "react";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarInset, SidebarProvider } from "../ui/sidebar";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
 import { WorkSettings } from "../work-settings";
 import { WellbeingSettings } from "../wellbeing-settings";
-import { ReminderSettings } from "../ReminderSettings";
+import { ReminderSettings } from "../reminders";
+import { CustomizationSettings } from "../customization-settings";
 import {
   BREAK_META,
   type AppSettings,
@@ -41,77 +41,11 @@ const Appbar = ({ settings, setSettings, skinSwatchClass }: AppbarProps) => {
           )}
 
           {section === "customization" && (
-            <>
-              <header className="mb-12 max-w-4xl">
-                <h2 className="text-4xl font-extrabold text-on-surface tracking-tight mb-2">
-                  Customization
-                </h2>
-                <p className="text-on-surface-variant text-lg">
-                  Personalize your Lory buddy.
-                </p>
-              </header>
-              <div className="grid gap-6 max-w-4xl">
-                <div className="bg-surface-container-low p-6 rounded-xl">
-                  <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-on-surface-variant">
-                    Buddy Identity
-                  </h3>
-                  <label className="block">
-                    <span className="block text-sm font-semibold mb-2">
-                      Buddy name
-                    </span>
-                    <Input
-                      className="w-full bg-surface-container-lowest border-none rounded-md focus:ring-2 focus:ring-primary/20 p-3 font-medium"
-                      type="text"
-                      value={settings.buddyName}
-                      maxLength={24}
-                      onChange={(event) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          buddyName:
-                            event.target.value.trimStart().slice(0, 24) ||
-                            "Lory",
-                        }))
-                      }
-                    />
-                  </label>
-                </div>
-                <div className="bg-surface-container-low p-6 rounded-xl">
-                  <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-on-surface-variant">
-                    Buddy Look
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {Object.entries(skinSwatchClass).map(
-                      ([id, swatchClass]) => (
-                        <Button
-                          key={id}
-                          type="button"
-                          variant="ghost"
-                          className={[
-                            "flex items-center gap-3 p-4 rounded-xl border-2 transition-all",
-                            settings.buddySkin === id
-                              ? "border-primary bg-surface-container-lowest shadow-sm"
-                              : "border-transparent bg-surface-container-lowest hover:bg-surface-container-high",
-                          ].join(" ")}
-                          onClick={() =>
-                            setSettings((prev) => ({
-                              ...prev,
-                              buddySkin: id as BuddySkin,
-                            }))
-                          }
-                        >
-                          <span
-                            className={`h-8 w-8 rounded-full border border-outline/20 ${swatchClass}`}
-                          />
-                          <span className="font-bold">
-                            {id.charAt(0).toUpperCase() + id.slice(1)}
-                          </span>
-                        </Button>
-                      ),
-                    )}
-                  </div>
-                </div>
-              </div>
-            </>
+            <CustomizationSettings
+              settings={settings}
+              setSettings={setSettings}
+              skinSwatchClass={skinSwatchClass}
+            />
           )}
 
           {section === "reminders" && (

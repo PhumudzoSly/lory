@@ -1,5 +1,6 @@
 export type BreakType = "eye" | "hydrate" | "stretch" | "full" | "posture" | "mindfulness" | "wrist";
-export type BuddySkin = "sunny" | "mint" | "sky" | "rose";
+export type BuddySkin = "sunny" | "mint" | "sky" | "rose" | "lavender" | "peach" | "slate" | "charcoal";
+export type WorkDay = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 
 export type BreakSetting = {
   enabled: boolean;
@@ -38,6 +39,7 @@ export type DailyWorkLog = {
   startTime: string; // "09:00"
   endTime: string;   // "17:00"
   hours: number;     // (endTime - startTime) in hours, always >= 0
+  source?: "auto";   // helps filtering/cleanup
 };
 
 export type AppSettings = {
@@ -52,6 +54,8 @@ export type AppSettings = {
   workStartTime: string; // global default, kept in sync with today's log
   workEndTime: string;   // global default, kept in sync with today's log
   workHoursGoal: number;
+  workDays: WorkDay[];
+  autoWorkLogging: boolean;
   dailyLogs: Record<string, DailyWorkLog>;
 };
 
@@ -60,6 +64,10 @@ export const BUDDY_SKINS: Array<{ id: BuddySkin; label: string }> = [
   { id: "mint", label: "Mint" },
   { id: "sky", label: "Sky" },
   { id: "rose", label: "Rose" },
+  { id: "lavender", label: "Lavender" },
+  { id: "peach", label: "Peach" },
+  { id: "slate", label: "Slate" },
+  { id: "charcoal", label: "Charcoal" },
 ];
 
 export const BREAK_META: Record<
@@ -204,6 +212,8 @@ export const buildDefaultSettings = (): AppSettings => ({
   workStartTime: "09:00",
   workEndTime: "17:00",
   workHoursGoal: 40,
+  workDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+  autoWorkLogging: true,
   dailyLogs: {},
 });
 
@@ -231,6 +241,16 @@ function deriveEndTime(startTime: string, hours: number): string {
 export function migrateLegacySettings(raw: Record<string, unknown>): AppSettings {
   const base = buildDefaultSettings();
   const merged = { ...base, ...(raw as Partial<AppSettings>) };
+
+  // Ensure workDays exists
+  if (!Array.isArray(merged.workDays) || merged.workDays.length === 0) {
+    merged.workDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+  }
+
+  // Ensure autoWorkLogging exists
+  if (typeof merged.autoWorkLogging !== "boolean") {
+    merged.autoWorkLogging = true;
+  }
 
   const defaultStart =
     typeof raw.workStartTime === "string" && TIME_RE.test(raw.workStartTime)

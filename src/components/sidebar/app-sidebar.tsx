@@ -76,21 +76,16 @@ export function AppSidebar({
         <div className="p-1">
           <div className="relative overflow-hidden rounded-xl border bg-card/90 p-3 shadow-sm">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_55%)]" />
-            <div className="relative flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
-                  <IconSparkles className="size-4" />
-                </span>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Work Hours
-                  </p>
-                  <p className="text-xs font-semibold">Focus Score</p>
-                </div>
-              </div>
-              <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-emerald-700">
-                80%
+            <div className="relative flex items-center gap-2">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+                <IconSparkles className="size-4" />
               </span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Lory
+                </p>
+                <p className="text-xs font-medium text-foreground">v0.1.0</p>
+              </div>
             </div>
           </div>
         </div>
