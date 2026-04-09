@@ -1,6 +1,23 @@
-export type BreakType = "eye" | "hydrate" | "stretch" | "full" | "posture" | "mindfulness" | "wrist";
-export type BuddySkin = "sunny" | "mint" | "sky" | "rose" | "lavender" | "peach" | "slate" | "charcoal";
+export type BreakType =
+  | "eye"
+  | "hydrate"
+  | "stretch"
+  | "full"
+  | "posture"
+  | "mindfulness"
+  | "wrist";
+export type BuddySkin =
+  | "sunny"
+  | "mint"
+  | "sky"
+  | "rose"
+  | "lavender"
+  | "peach"
+  | "slate"
+  | "charcoal";
 export type WorkDay = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
+export type PendingActionSource = "break" | "work" | "custom";
+export type PendingActionSection = "wellbeing" | "reminders";
 
 export type BreakSetting = {
   enabled: boolean;
@@ -34,12 +51,25 @@ export type CustomReminder = {
 };
 
 export type DailyWorkLog = {
-  date: string;      // ISO date "2026-04-06"
-  day: string;       // "Sunday"
+  date: string; // ISO date "2026-04-06"
+  day: string; // "Sunday"
   startTime: string; // "09:00"
-  endTime: string;   // "17:00"
-  hours: number;     // (endTime - startTime) in hours, always >= 0
-  source?: "auto";   // helps filtering/cleanup
+  endTime: string; // "17:00"
+  hours: number; // (endTime - startTime) in hours, always >= 0
+  source?: "auto"; // helps filtering/cleanup
+};
+
+export type PendingAction = {
+  id: string;
+  dedupeKey: string;
+  source: PendingActionSource;
+  title: string;
+  description: string;
+  severity: 1 | 2 | 3;
+  createdAt: number;
+  lastTriggeredAt: number;
+  targetSection: PendingActionSection;
+  targetId?: string;
 };
 
 export type AppSettings = {
@@ -52,12 +82,13 @@ export type AppSettings = {
   buddyName: string;
   buddySkin: BuddySkin;
   workStartTime: string; // global default, kept in sync with today's log
-  workEndTime: string;   // global default, kept in sync with today's log
+  workEndTime: string; // global default, kept in sync with today's log
   workHoursGoal: number;
   workDays: WorkDay[];
   autoWorkLogging: boolean;
   dailyLogs: Record<string, DailyWorkLog>;
   lastFiredAt: Partial<Record<BreakType, number>>; // epoch ms, written by scheduler when a break fires
+  pendingActions: PendingAction[];
 };
 
 export const BUDDY_SKINS: Array<{ id: BuddySkin; label: string }> = [
@@ -217,10 +248,19 @@ export const buildDefaultSettings = (): AppSettings => ({
   autoWorkLogging: true,
   dailyLogs: {},
   lastFiredAt: {},
+  pendingActions: [],
 });
 
 const TIME_RE = /^\d{2}:\d{2}$/;
-const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 function computeHours(startTime: string, endTime: string): number {
   const [startH, startM] = startTime.split(":").map(Number);
@@ -240,9 +280,15 @@ function deriveEndTime(startTime: string, hours: number): string {
  * Migrates raw persisted data (potentially old format) into a valid AppSettings.
  * Safe to call on already-migrated settings (idempotent).
  */
-export function migrateLegacySettings(raw: Record<string, unknown>): AppSettings {
+export function migrateLegacySettings(
+  raw: Record<string, unknown>,
+): AppSettings {
   const base = buildDefaultSettings();
   const merged = { ...base, ...(raw as Partial<AppSettings>) };
+
+  if (!Array.isArray(merged.pendingActions)) {
+    merged.pendingActions = [];
+  }
 
   // Ensure workDays exists
   if (!Array.isArray(merged.workDays) || merged.workDays.length === 0) {
@@ -302,4 +348,3 @@ export const nextDueTimestamp = (
     breakType === "posture" ? postureRandomMinutes() : minutes;
   return Date.now() + selectedMinutes * 60_000;
 };
-

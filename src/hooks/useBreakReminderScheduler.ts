@@ -21,6 +21,7 @@ type UseBreakReminderSchedulerParams = {
   setSettings: Dispatch<SetStateAction<AppSettings>>;
   isPaused: boolean;
   isSuppressed: boolean;
+  onBreakTriggered?: (breakType: BreakType) => void;
 };
 
 const OVERLAP_DEFER_MS = 2 * 60 * 1_000;
@@ -32,6 +33,7 @@ export const useBreakReminderScheduler = ({
   setSettings,
   isPaused,
   isSuppressed,
+  onBreakTriggered,
 }: UseBreakReminderSchedulerParams): void => {
   useEffect(() => {
     const tick = window.setInterval(() => {
@@ -88,6 +90,8 @@ export const useBreakReminderScheduler = ({
           [nextType]: now,
         },
       }));
+
+      onBreakTriggered?.(nextType);
     }, 1_000);
 
     return () => window.clearInterval(tick);
@@ -98,5 +102,6 @@ export const useBreakReminderScheduler = ({
     settings,
     setBreakStates,
     setSettings,
+    onBreakTriggered,
   ]);
 };

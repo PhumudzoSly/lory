@@ -91,23 +91,22 @@ export function UpcomingReminders({ settings }: Props) {
       </div>
 
       <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {upcomingReminders.map(
-          ({ id, icon: Icon, title, description, time }) => (
+        {upcomingReminders.map((reminder) => (
             <div
-              key={id}
+              key={reminder.id}
               className="flex flex-col gap-3 p-4 sm:p-5 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 hover:border-border transition-all group"
             >
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl sm:text-2xl group-hover:scale-105 transition-transform">
-                  {Icon}
+                  <span>{reminder.icon}</span>
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-foreground text-sm sm:text-base mb-0.5 line-clamp-1">
-                    {title}
+                    {reminder.title}
                   </h4>
                   <p className="text-xs text-muted-foreground line-clamp-2">
-                    {description}
+                    {reminder.description}
                   </p>
                 </div>
               </div>
@@ -116,16 +115,15 @@ export function UpcomingReminders({ settings }: Props) {
                 <div className="flex items-center gap-1.5 text-primary">
                   <IconClock className="size-3.5 sm:size-4" />
                   <span className="text-xs sm:text-sm font-bold tabular-nums">
-                    {formatTime(time)}
+                    {formatTime(reminder.time)}
                   </span>
                 </div>
                 <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {getTimeUntil(time)}
+                  {getTimeUntil(reminder.time)}
                 </span>
               </div>
             </div>
-          ),
-        )}
+        ))}
       </div>
     </section>
   );

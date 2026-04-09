@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarInset, SidebarProvider } from "../ui/sidebar";
 import { Button } from "../ui/button";
@@ -18,10 +18,26 @@ type AppbarProps = {
   settings: AppSettings;
   setSettings: React.Dispatch<React.SetStateAction<AppSettings>>;
   skinSwatchClass: Record<BuddySkin, string>;
+  requestedSection?: SidebarSection;
+  highlightedPendingActionId?: string | null;
+  onPendingActionHandled?: () => void;
 };
 
-const Appbar = ({ settings, setSettings, skinSwatchClass }: AppbarProps) => {
+const Appbar = ({
+  settings,
+  setSettings,
+  skinSwatchClass,
+  requestedSection,
+  highlightedPendingActionId,
+  onPendingActionHandled,
+}: AppbarProps) => {
   const [section, setSection] = useState<SidebarSection>("work");
+
+  useEffect(() => {
+    if (requestedSection) {
+      setSection(requestedSection);
+    }
+  }, [requestedSection]);
 
   return (
     <SidebarProvider>
@@ -49,7 +65,12 @@ const Appbar = ({ settings, setSettings, skinSwatchClass }: AppbarProps) => {
           )}
 
           {section === "reminders" && (
-            <ReminderSettings settings={settings} setSettings={setSettings} />
+            <ReminderSettings
+              settings={settings}
+              setSettings={setSettings}
+              highlightedPendingActionId={highlightedPendingActionId}
+              onPendingActionHandled={onPendingActionHandled}
+            />
           )}
 
           {section === "about" && (

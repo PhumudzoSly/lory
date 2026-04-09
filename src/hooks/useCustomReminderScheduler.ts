@@ -8,6 +8,7 @@ import type {
 import { playChime } from "../lib/sound";
 import { sendNativeNotification } from "../lib/notification";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { emit } from "@tauri-apps/api/event";
 
 type UseCustomReminderSchedulerParams = {
   settings: AppSettings;
@@ -15,6 +16,10 @@ type UseCustomReminderSchedulerParams = {
   mute: boolean;
   isPaused: boolean;
   isSuppressed: boolean;
+  onCustomReminderTriggered?: (
+    reminder: CustomReminder,
+    milestone: 30 | 15 | 0,
+  ) => void;
 };
 
 const REMINDER_MILESTONES: Array<30 | 15 | 0> = [30, 15, 0];
@@ -106,12 +111,16 @@ const focusOrCreateSettingsWindow = (): void => {
     if (existing) {
       void existing.show();
       void existing.setFocus();
+      void emit("buddy-open-target", { section: "reminders" });
       return;
     }
 
+    const params = new URLSearchParams();
+    params.set("section", "reminders");
+
     const settingsWindow = new WebviewWindow("settings", {
       title: "Lory Settings",
-      url: "/settings.html",
+      url: `/settings.html?${params.toString()}`,
       width: 1000,
       height: 700,
       center: true,
@@ -129,6 +138,7 @@ export const useCustomReminderScheduler = ({
   mute,
   isPaused,
   isSuppressed,
+  onCustomReminderTriggered,
 }: UseCustomReminderSchedulerParams): void => {
   const dayKeyRef = useRef(localDateKey(new Date()));
   const sentMilestonesRef = useRef<Record<string, Record<number, boolean>>>({});
@@ -234,6 +244,7 @@ export const useCustomReminderScheduler = ({
                 : `It's time. ${selectedMessage}`;
 
           void sendNativeNotification(notifTitle, notifBody);
+          onCustomReminderTriggered?.(reminder, milestone);
 
           if (!mute) {
             playChime();
@@ -268,5 +279,6 @@ export const useCustomReminderScheduler = ({
     mute,
     setSettings,
     settings.customReminders,
+    onCustomReminderTriggered,
   ]);
 };

@@ -6,6 +6,7 @@ type BuddyCharacterProps = {
   emotion: "idle" | "nudging" | "happy" | "concerned" | "sleeping";
   skin: BuddySkin;
   name: string;
+  pendingCount?: number;
   onClick: () => void;
   onContextMenu: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => void;
@@ -29,6 +30,7 @@ export function BuddyCharacter({
   emotion,
   skin,
   name,
+  pendingCount = 0,
   onClick,
   onContextMenu,
   onPointerDown,
@@ -64,6 +66,11 @@ export function BuddyCharacter({
         <span className="buddy-cheek cheek-right" />
         <span className="buddy-mouth" />
       </span>
+      {pendingCount > 0 && (
+        <span className="buddy-unresolved-badge" aria-hidden="true">
+          {pendingCount > 9 ? "9+" : pendingCount}
+        </span>
+      )}
       {emotion === "sleeping" && <span className="buddy-zzz">zzz</span>}
     </button>
   );

@@ -30,6 +30,7 @@ type UseWorkReminderSchedulerParams = {
   mute: boolean;
   isPaused: boolean;
   isSuppressed: boolean;
+  onWorkReminderTriggered?: (milestone: WorkReminderMilestone) => void;
 };
 
 const WORK_NOTIFICATION: Record<
@@ -57,6 +58,7 @@ export const useWorkReminderScheduler = ({
   mute,
   isPaused,
   isSuppressed,
+  onWorkReminderTriggered,
 }: UseWorkReminderSchedulerParams): void => {
   const workReminderDayRef = useRef(localDateKey(new Date()));
   const workReminderSentRef = useRef<Record<WorkReminderMilestone, boolean>>({
@@ -148,6 +150,7 @@ export const useWorkReminderScheduler = ({
       workReminderSentRef.current[nextMilestone] = true;
       const { title, body } = WORK_NOTIFICATION[nextMilestone];
       void sendNativeNotification(title, body);
+      onWorkReminderTriggered?.(nextMilestone);
 
       if (!mute) {
         playChime();
@@ -155,5 +158,13 @@ export const useWorkReminderScheduler = ({
     }, 5_000);
 
     return () => window.clearInterval(tick);
-  }, [isPaused, isSuppressed, mute, workDays, workEndTime, workStartTime]);
+  }, [
+    isPaused,
+    isSuppressed,
+    mute,
+    workDays,
+    workEndTime,
+    workStartTime,
+    onWorkReminderTriggered,
+  ]);
 };

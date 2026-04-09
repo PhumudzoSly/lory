@@ -4,6 +4,7 @@ import { Switch } from "../ui/switch";
 import type { AppSettings } from "../../lib/buddyConfig";
 
 type Props = {
+  lastFiredAt?: number | undefined;
   settings: AppSettings;
   updateInterval: (breakType: keyof AppSettings["breaks"], minutes: number) => void;
   toggleEnabled: (breakType: keyof AppSettings["breaks"], enabled: boolean) => void;
@@ -20,15 +21,12 @@ const sliderStyles = {
 export function Mindfulness({ settings, updateInterval, toggleEnabled }: Props) {
   return (
     <section
-      className={`bg-card p-8 rounded-[2rem] shadow-sm border border-emerald-100/30 flex flex-col transition-all duration-300 relative overflow-hidden ${!settings.breaks.mindfulness.enabled ? "opacity-60 grayscale-[50%] hover:opacity-80" : "hover:shadow-md hover:border-emerald-200/50"}`}
+      className={`bg-card p-6 rounded-lg shadow-sm border border-emerald-100/30 flex flex-col transition-all duration-300 relative overflow-hidden ${!settings.breaks.mindfulness.enabled ? "opacity-60 grayscale-[50%] " : ""}`}
     >
-      {settings.breaks.mindfulness.enabled && (
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/40 via-transparent to-orange-50/20 pointer-events-none" />
-      )}
       <div>
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-4 relative z-10">
-          <div className="p-3 bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl shadow-sm border border-orange-200/50 shrink-0">
+          <div className="p-3 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg shadow-sm border border-orange-200/50 shrink-0">
             <IconLeaf className="size-6 text-orange-700" />
           </div>
           <h3 className="text-xl font-bold text-foreground">

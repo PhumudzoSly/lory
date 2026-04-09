@@ -11,12 +11,27 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+!.env.example
+.DS_Store
+coverage
+.turbo
+
+# Build artifacts
+src-tauri/target
+src-tauri/bundle
+*.msi
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.exe
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj

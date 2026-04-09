@@ -247,6 +247,25 @@
   pointer-events: none;
 }
 
+.buddy-unresolved-badge {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
 /* --- KEYFRAMES --- */
 
 @keyframes buddy-blink {

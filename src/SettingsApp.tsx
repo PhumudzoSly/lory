@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { emit } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { load as loadStore } from "@tauri-apps/plugin-store";
 import { type AppSettings, type BuddySkin } from "./lib/buddyConfig";
 import { readInitialSettings } from "./lib/settingsStorage";
 import Appbar from "./components/sidebar/app-bar";
+import type { SidebarSection } from "./components/sidebar/app-sidebar";
 
 const APP_STORAGE_KEY = "Lory.settings.v1";
 const STORE_FILE = "Lory.json";
@@ -11,6 +12,30 @@ const STORE_SETTINGS_KEY = "settings.data";
 
 export default function SettingsApp() {
   const [settings, setSettings] = useState<AppSettings>(readInitialSettings);
+  const [requestedSection, setRequestedSection] =
+    useState<SidebarSection>("work");
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const search = new URLSearchParams(window.location.search);
+    const section = search.get("section");
+    const pendingId = search.get("pendingActionId");
+    const allowed: SidebarSection[] = [
+      "work",
+      "wellbeing",
+      "customization",
+      "reminders",
+      "about",
+    ];
+
+    if (section && allowed.includes(section as SidebarSection)) {
+      setRequestedSection(section as SidebarSection);
+    }
+
+    if (pendingId) {
+      setPendingActionId(pendingId);
+    }
+  }, []);
 
   useEffect(() => {
     const syncSettings = async () => {
@@ -32,7 +57,10 @@ export default function SettingsApp() {
       try {
         const parsed = JSON.parse(e.newValue) as Partial<AppSettings>;
         if (parsed.lastFiredAt) {
-          setSettings((prev) => ({ ...prev, lastFiredAt: parsed.lastFiredAt! }));
+          setSettings((prev) => ({
+            ...prev,
+            lastFiredAt: parsed.lastFiredAt!,
+          }));
         }
       } catch {
         // ignore malformed data
@@ -40,6 +68,24 @@ export default function SettingsApp() {
     };
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  useEffect(() => {
+    const unlistenPromise = listen<{
+      section?: SidebarSection;
+      pendingActionId?: string;
+    }>("buddy-open-target", (event) => {
+      if (event.payload.section) {
+        setRequestedSection(event.payload.section);
+      }
+      if (event.payload.pendingActionId) {
+        setPendingActionId(event.payload.pendingActionId);
+      }
+    });
+
+    return () => {
+      void unlistenPromise.then((unlisten) => unlisten());
+    };
   }, []);
 
   const skinSwatchClass: Record<BuddySkin, string> = {
@@ -53,5 +99,14 @@ export default function SettingsApp() {
     charcoal: "bg-gradient-to-br from-zinc-700 to-zinc-900",
   };
 
-  return <Appbar settings={settings} setSettings={setSettings} skinSwatchClass={skinSwatchClass} />;
+  return (
+    <Appbar
+      settings={settings}
+      setSettings={setSettings}
+      skinSwatchClass={skinSwatchClass}
+      requestedSection={requestedSection}
+      highlightedPendingActionId={pendingActionId}
+      onPendingActionHandled={() => setPendingActionId(null)}
+    />
+  );
 }

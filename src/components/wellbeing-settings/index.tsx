@@ -47,6 +47,8 @@ export function WellbeingSettings({ settings, setSettings }: Props) {
     }));
   };
 
+  const lfa = settings.lastFiredAt;
+
   return (
     <>
       <header className="mb-12 max-w-4xl">
@@ -69,6 +71,7 @@ export function WellbeingSettings({ settings, setSettings }: Props) {
         <div className="col-span-12 lg:col-span-8 space-y-8">
           <EyeRest
             settings={settings}
+            lastFiredAt={lfa.eye}
             updateInterval={updateInterval}
             toggleEnabled={toggleEnabled}
           />
@@ -81,6 +84,7 @@ export function WellbeingSettings({ settings, setSettings }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Hydration
               settings={settings}
+              lastFiredAt={lfa.hydrate}
               updateInterval={updateInterval}
               toggleEnabled={toggleEnabled}
             />
@@ -106,7 +110,6 @@ export function WellbeingSettings({ settings, setSettings }: Props) {
 
           <FullReset
             settings={settings}
-            lastFiredAt={settings.lastFiredAt?.full}
             updateInterval={updateInterval}
             toggleEnabled={toggleEnabled}
           />

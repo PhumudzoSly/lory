@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
+import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { Toaster, toast } from "sonner";
 import { BuddyCharacter } from "./components/BuddyCharacter";
 import {
   BREAK_META,
   nextDueTimestamp,
   type AppSettings,
   type BreakType,
+  type PendingAction,
 } from "./lib/buddyConfig";
 import { readInitialSettings } from "./lib/settingsStorage";
 import { useSettingsSync } from "./hooks/useSettingsSync";
@@ -16,15 +19,29 @@ import { useBreakReminderScheduler } from "./hooks/useBreakReminderScheduler";
 import { useWorkReminderScheduler } from "./hooks/useWorkReminderScheduler";
 import { useCustomReminderScheduler } from "./hooks/useCustomReminderScheduler";
 import { useAutomaticWorkLog } from "./hooks/useAutomaticWorkLog";
+import { requestNotificationPermissions } from "./lib/notification";
 import "./App.css";
 
-type Emotion = "idle" | "sleeping";
+type Emotion = "idle" | "sleeping" | "concerned" | "nudging";
+type TargetSection =
+  | "work"
+  | "wellbeing"
+  | "customization"
+  | "reminders"
+  | "about";
 
 type BreakState = {
   nextDueAt: number;
 };
 
 function App() {
+  const localDateKey = useCallback((value = new Date()): string => {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }, []);
+
   const appWindow = useMemo(() => getCurrentWindow(), []);
   const buddyRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{
@@ -76,14 +93,94 @@ function App() {
   const [dnd, setDnd] = useState(false);
   const [snoozeUntil, setSnoozeUntil] = useState<number | null>(null);
 
+  const upsertPendingAction = useCallback(
+    (action: Omit<PendingAction, "id" | "createdAt" | "lastTriggeredAt">) => {
+      const now = Date.now();
+      setSettings((prev) => {
+        const existing = prev.pendingActions.find(
+          (item) => item.dedupeKey === action.dedupeKey,
+        );
+
+        if (existing) {
+          return {
+            ...prev,
+            pendingActions: prev.pendingActions.map((item) =>
+              item.dedupeKey === action.dedupeKey
+                ? {
+                    ...item,
+                    ...action,
+                    lastTriggeredAt: now,
+                  }
+                : item,
+            ),
+          };
+        }
+
+        return {
+          ...prev,
+          pendingActions: [
+            {
+              ...action,
+              id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
+              createdAt: now,
+              lastTriggeredAt: now,
+            },
+            ...prev.pendingActions,
+          ].slice(0, 25),
+        };
+      });
+    },
+    [setSettings],
+  );
+
   const isPaused = dnd || (snoozeUntil !== null && snoozeUntil > Date.now());
   const isSuppressed = settings.autoPauseFullscreen && isFullscreenSuppressed;
 
-  const emotion: Emotion = isPaused || isSuppressed ? "sleeping" : "idle";
+  const pendingActions = useMemo(
+    () =>
+      [...settings.pendingActions].sort((a, b) => {
+        if (a.severity !== b.severity) {
+          return b.severity - a.severity;
+        }
+        const sourceRank: Record<PendingAction["source"], number> = {
+          break: 0,
+          work: 1,
+          custom: 2,
+        };
+        if (sourceRank[a.source] !== sourceRank[b.source]) {
+          return sourceRank[a.source] - sourceRank[b.source];
+        }
+        return b.lastTriggeredAt - a.lastTriggeredAt;
+      }),
+    [settings.pendingActions],
+  );
+
+  const topPendingAction = pendingActions[0];
+  const pendingCount = pendingActions.length;
+
+  const emotion: Emotion = useMemo(() => {
+    if (isPaused || isSuppressed) {
+      return "sleeping";
+    }
+    if (pendingCount === 0) {
+      return "idle";
+    }
+    const oldestMs =
+      Date.now() - Math.min(...pendingActions.map((item) => item.createdAt));
+    if (pendingCount >= 3 || oldestMs >= 15 * 60_000) {
+      return "nudging";
+    }
+    return "concerned";
+  }, [isPaused, isSuppressed, pendingActions, pendingCount]);
 
   useSettingsSync({ settings, setSettings });
   useWindowPersistence({ appWindow, setSettings });
   useAutomaticWorkLog({ settings, setSettings });
+
+  // Request notification permissions on app load
+  useEffect(() => {
+    void requestNotificationPermissions();
+  }, []);
   useBreakReminderScheduler({
     breakStates,
     setBreakStates,
@@ -91,6 +188,24 @@ function App() {
     setSettings,
     isPaused,
     isSuppressed,
+    onBreakTriggered: (breakType) => {
+      const meta = BREAK_META[breakType];
+      
+      // Show toast notification
+      toast.info(meta.label, {
+        description: meta.action,
+      });
+
+      upsertPendingAction({
+        dedupeKey: `break:${breakType}`,
+        source: "break",
+        title: meta.label,
+        description: meta.action,
+        severity: meta.priority === 3 ? 3 : meta.priority === 2 ? 2 : 1,
+        targetSection: "reminders",
+        targetId: breakType,
+      });
+    },
   });
   useWorkReminderScheduler({
     workStartTime: settings.workStartTime,
@@ -99,6 +214,36 @@ function App() {
     mute: settings.mute,
     isPaused,
     isSuppressed,
+    onWorkReminderTriggered: (milestone) => {
+      const labels: Record<0 | 15 | 30, string> = {
+        30: "Workday Check-In",
+        15: "Almost Done",
+        0: "Clock-Out Time",
+      };
+
+      // Show toast notification
+      const descriptions: Record<0 | 15 | 30, string> = {
+        30: "Time to check in on your work progress",
+        15: "You're almost done for the day!",
+        0: "Your workday has ended",
+      };
+
+      toast.info(labels[milestone], {
+        description: descriptions[milestone],
+      });
+
+      upsertPendingAction({
+        dedupeKey: `work:${milestone}:${localDateKey()}`,
+        source: "work",
+        title: labels[milestone],
+        description:
+          milestone === 0
+            ? "Your workday ended. Confirm your next action."
+            : `Work reminder for ${milestone} minute milestone.`,
+        severity: milestone === 0 ? 2 : 1,
+        targetSection: "reminders",
+      });
+    },
   });
   useCustomReminderScheduler({
     settings,
@@ -106,37 +251,84 @@ function App() {
     mute: settings.mute,
     isPaused,
     isSuppressed,
+    onCustomReminderTriggered: (reminder, milestone) => {
+      const selectedMessage =
+        reminder.messages && reminder.messages.length > 0
+          ? reminder.messages[
+              Math.floor(Math.random() * reminder.messages.length)
+            ]
+          : reminder.description;
+
+      // Show toast notification
+      if (milestone === 0) {
+        toast.info(`Time for: ${reminder.title}`, {
+          description: selectedMessage || "Your custom reminder is due now",
+        });
+      } else {
+        toast.info(`Upcoming: ${reminder.title}`, {
+          description: `This reminder is due in ${milestone} minutes`,
+        });
+      }
+
+      upsertPendingAction({
+        dedupeKey: `custom:${reminder.id}:${milestone}:${localDateKey()}`,
+        source: "custom",
+        title: reminder.title,
+        description:
+          milestone === 0
+            ? "Custom reminder is due now."
+            : `Custom reminder milestone at ${milestone} minutes.`,
+        severity: milestone === 0 ? 2 : 1,
+        targetSection: "reminders",
+        targetId: reminder.id,
+      });
+    },
   });
 
-  const openSettingsWindow = useCallback(async () => {
-    const existing = await WebviewWindow.getByLabel("settings");
-    if (existing) {
-      await existing.show();
-      await existing.setFocus();
-      return;
-    }
+  const openSettingsWindow = useCallback(
+    async (targetSection?: TargetSection) => {
+      const payload = {
+        section: targetSection ?? "work",
+        pendingActionId: topPendingAction?.id,
+      };
 
-    const settingsWindow = new WebviewWindow("settings", {
-      title: "Lory Settings",
-      url: "/settings.html",
-      width: 880,
-      height: 560,
-      minWidth: 760,
-      minHeight: 480,
-      resizable: true,
-      center: true,
-      decorations: true,
-    });
+      const existing = await WebviewWindow.getByLabel("settings");
+      if (existing) {
+        await existing.show();
+        await existing.setFocus();
+        await emit("buddy-open-target", payload);
+        return;
+      }
 
-    settingsWindow.once("tauri://created", () => {
-      void settingsWindow.setFocus();
-    });
+      const params = new URLSearchParams();
+      params.set("section", payload.section);
+      if (payload.pendingActionId) {
+        params.set("pendingActionId", payload.pendingActionId);
+      }
 
-    settingsWindow.once("tauri://error", (event) => {
-      // eslint-disable-next-line no-console
-      console.error("Failed to create settings window", event.payload);
-    });
-  }, []);
+      const settingsWindow = new WebviewWindow("settings", {
+        title: "Lory Settings",
+        url: `/settings.html?${params.toString()}`,
+        width: 880,
+        height: 560,
+        minWidth: 760,
+        minHeight: 480,
+        resizable: true,
+        center: true,
+        decorations: true,
+      });
+
+      settingsWindow.once("tauri://created", () => {
+        void settingsWindow.setFocus();
+      });
+
+      settingsWindow.once("tauri://error", (event) => {
+        // eslint-disable-next-line no-console
+        console.error("Failed to create settings window", event.payload);
+      });
+    },
+    [topPendingAction?.id],
+  );
 
   useEffect(() => {
     const onFsChange = () => {
@@ -200,10 +392,17 @@ function App() {
 
   return (
     <div className="relative h-full w-full">
+      <Toaster
+        position="top-right"
+        richColors
+        theme="system"
+        closeButton
+      />
       <div className="absolute bottom-0 left-0 flex h-14 w-14 items-center justify-center">
         <div ref={buddyRef} className="relative h-14 w-14">
           <BuddyCharacter
             emotion={emotion}
+            pendingCount={pendingCount}
             onPointerDown={handleBuddyPointerDown}
             onPointerMove={(event) => {
               void handleBuddyPointerMove(event);
@@ -215,6 +414,10 @@ function App() {
               if (dragStateRef.current?.dragging) {
                 return;
               }
+              if (topPendingAction) {
+                void openSettingsWindow(topPendingAction.targetSection);
+                return;
+              }
               void openSettingsWindow();
             }}
             onContextMenu={(event) => {
@@ -222,8 +425,22 @@ function App() {
               void (async () => {
                 const { Menu } = await import("@tauri-apps/api/menu");
                 const { exit } = await import("@tauri-apps/plugin-process");
+                const pendingMenuItem = topPendingAction
+                  ? [
+                      {
+                        id: "resolve-top",
+                        text: `Resolve: ${topPendingAction.title}`,
+                        action: () =>
+                          void openSettingsWindow(
+                            topPendingAction.targetSection,
+                          ),
+                      },
+                    ]
+                  : [];
+
                 const menu = await Menu.new({
                   items: [
+                    ...pendingMenuItem,
                     {
                       id: "snooze30",
                       text: "Snooze 30m",

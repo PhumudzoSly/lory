@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest an improvement or new feature for Lory
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your idea! Please describe what you have in mind.
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature description
+      placeholder: A clear description of the feature you want
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why is this useful?
+      description: How would this help you and other users?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions you've considered?

@@ -1,13 +1,36 @@
 {
   "name": "lory",
-  "private": true,
+  "description": "A desktop wellbeing companion that helps you balance focused work with healthy breaks.",
   "version": "0.1.0",
+  "license": "MIT",
+  "author": "Phumudzo Mahandana",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PhumudzoSly/lory.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PhumudzoSly/lory/issues"
+  },
+  "homepage": "https://github.com/PhumudzoSly/lory#readme",
   "type": "module",
+  "packageManager": "pnpm@8.15.9",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=8"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
+    "build": "pnpm typecheck && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "lint": "eslint . --ext .ts,.tsx,.js,.mjs,.cjs",
+    "lint:fix": "pnpm lint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest --run --passWithNoTests",
+    "test:watch": "vitest",
+    "check": "pnpm lint && pnpm test && pnpm build",
     "assets:svg": "node scripts/generate-svg-assets.mjs",
     "icons:generate": "pnpm assets:svg && pnpm tauri icon src-tauri/icons/icon.svg"
   },
@@ -40,13 +63,21 @@
     "vaul": "^1.1.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.32.0",
     "@tailwindcss/vite": "^4.2.2",
     "@tauri-apps/cli": "^2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "eslint": "^9.32.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
     "tailwindcss": "^4.2.2",
     "typescript": "~5.8.3",
-    "vite": "^7.0.4"
+    "typescript-eslint": "^8.38.0",
+    "vite": "^7.0.4",
+    "vitest": "^3.2.4"
   }
 }
