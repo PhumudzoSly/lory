@@ -23,6 +23,7 @@ const sourceLabel: Record<PendingAction["source"], string> = {
   break: "Break",
   work: "Work",
   custom: "Reminder",
+  afterHours: "After Hours",
 };
 
 export function ReminderSettings({

@@ -17,6 +17,7 @@ import { useWindowPersistence } from "./hooks/useWindowPersistence";
 import { useBreakReminderScheduler } from "./hooks/useBreakReminderScheduler";
 import { useWorkReminderScheduler } from "./hooks/useWorkReminderScheduler";
 import { useCustomReminderScheduler } from "./hooks/useCustomReminderScheduler";
+import { useAfterHoursScheduler } from "./hooks/useAfterHoursScheduler";
 import { useAutomaticWorkLog } from "./hooks/useAutomaticWorkLog";
 import { requestNotificationPermissions } from "./lib/notification";
 import "./App.css";
@@ -145,6 +146,7 @@ function App() {
           break: 0,
           work: 1,
           custom: 2,
+          afterHours: 3,
         };
         if (sourceRank[a.source] !== sourceRank[b.source]) {
           return sourceRank[a.source] - sourceRank[b.source];
@@ -190,11 +192,6 @@ function App() {
     onBreakTriggered: (breakType) => {
       const meta = BREAK_META[breakType];
 
-      // Show native notification
-      new Notification(meta.label, {
-        body: meta.action,
-      });
-
       upsertPendingAction({
         dedupeKey: `break:${breakType}`,
         source: "break",
@@ -220,17 +217,6 @@ function App() {
         0: "Clock-Out Time",
       };
 
-      // Show native notification
-      const descriptions: Record<0 | 15 | 30, string> = {
-        30: "Time to check in on your work progress",
-        15: "You're almost done for the day!",
-        0: "Your workday has ended",
-      };
-
-      new Notification(labels[milestone], {
-        body: descriptions[milestone],
-      });
-
       upsertPendingAction({
         dedupeKey: `work:${milestone}:${localDateKey()}`,
         source: "work",
@@ -251,24 +237,6 @@ function App() {
     isPaused,
     isSuppressed,
     onCustomReminderTriggered: (reminder, milestone) => {
-      const selectedMessage =
-        reminder.messages && reminder.messages.length > 0
-          ? reminder.messages[
-              Math.floor(Math.random() * reminder.messages.length)
-            ]
-          : reminder.description;
-
-      // Show native notification
-      if (milestone === 0) {
-        new Notification(`Time for: ${reminder.title}`, {
-          body: selectedMessage || "Your custom reminder is due now",
-        });
-      } else {
-        new Notification(`Upcoming: ${reminder.title}`, {
-          body: `This reminder is due in ${milestone} minutes`,
-        });
-      }
-
       upsertPendingAction({
         dedupeKey: `custom:${reminder.id}:${milestone}:${localDateKey()}`,
         source: "custom",
@@ -280,6 +248,22 @@ function App() {
         severity: milestone === 0 ? 2 : 1,
         targetSection: "reminders",
         targetId: reminder.id,
+      });
+    },
+  });
+  useAfterHoursScheduler({
+    settings,
+    mute: settings.mute,
+    isPaused,
+    isSuppressed,
+    onAfterHoursTriggered: (payload) => {
+      upsertPendingAction({
+        dedupeKey: `after-hours:${payload.id}:${localDateKey()}`,
+        source: "afterHours",
+        title: payload.title,
+        description: payload.description,
+        severity: payload.severity,
+        targetSection: "wellbeing",
       });
     },
   });

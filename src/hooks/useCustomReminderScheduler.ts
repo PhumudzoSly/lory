@@ -24,6 +24,10 @@ type UseCustomReminderSchedulerParams = {
 
 const REMINDER_MILESTONES: Array<30 | 15 | 0> = [30, 15, 0];
 
+// Grace window so a reminder whose scheduled time just passed (within one polling
+// interval) still fires instead of being silently skipped.
+const PAST_GRACE_MS = 10_000;
+
 const buildDateAtTime = (baseDate: Date, time: string): Date => {
   const [hour, minute] = time.split(":").map(Number);
   const target = new Date(baseDate);
@@ -171,14 +175,14 @@ export const useCustomReminderScheduler = ({
 
         if (
           reminder.scheduleType === "daily" &&
-          nextOccurrence.getTime() < now.getTime()
+          nextOccurrence.getTime() < now.getTime() - PAST_GRACE_MS
         ) {
           continue;
         }
 
         if (
           reminder.scheduleType === "once" &&
-          nextOccurrence.getTime() < now.getTime()
+          nextOccurrence.getTime() < now.getTime() - PAST_GRACE_MS
         ) {
           setSettings((prev) => ({
             ...prev,

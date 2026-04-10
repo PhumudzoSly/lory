@@ -55,7 +55,7 @@ export function AppSidebar({
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="mb-0.5 truncate font-semibold">Lory</span>
               <span className="truncate text-xs font-medium text-muted-foreground">
-                Work Smart
+                Live Smart
               </span>
             </div>
           </div>

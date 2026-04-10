@@ -8,6 +8,8 @@ import { Mindfulness } from "./mindfulness";
 import { WristCare } from "./wrist-care";
 import { FullReset } from "./full-reset";
 import { InfoPanel } from "./info-panel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { AfterHoursSettingsPanel } from "./after-hours-panel";
 
 type Props = {
   settings: AppSettings;
@@ -67,58 +69,78 @@ export function WellbeingSettings({ settings, setSettings }: Props) {
         </p>
       </header>
 
-      <div className="grid grid-cols-12 gap-8 max-w-6xl">
-        <div className="col-span-12 lg:col-span-8 space-y-8">
-          <EyeRest
-            settings={settings}
-            lastFiredAt={lfa.eye}
-            updateInterval={updateInterval}
-            toggleEnabled={toggleEnabled}
-          />
-          <Stretch
-            settings={settings}
-            updateInterval={updateInterval}
-            toggleEnabled={toggleEnabled}
-          />
+      <Tabs defaultValue="work-hours" className="max-w-6xl">
+        <TabsList className="mb-8 h-auto rounded-xl p-1.5">
+          <TabsTrigger value="work-hours" className="px-5 py-2.5 text-sm">
+            Work Hours
+          </TabsTrigger>
+          <TabsTrigger value="after-hours" className="px-5 py-2.5 text-sm">
+            After Hours
+          </TabsTrigger>
+        </TabsList>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Hydration
-              settings={settings}
-              lastFiredAt={lfa.hydrate}
-              updateInterval={updateInterval}
-              toggleEnabled={toggleEnabled}
-            />
-            <Posture
-              settings={settings}
-              updateInterval={updateInterval}
-              toggleEnabled={toggleEnabled}
-            />
+        <TabsContent value="work-hours">
+          <div className="grid grid-cols-12 gap-8">
+            <div className="col-span-12 space-y-8 lg:col-span-8">
+              <EyeRest
+                settings={settings}
+                lastFiredAt={lfa.eye}
+                updateInterval={updateInterval}
+                toggleEnabled={toggleEnabled}
+              />
+              <Stretch
+                settings={settings}
+                updateInterval={updateInterval}
+                toggleEnabled={toggleEnabled}
+              />
+
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                <Hydration
+                  settings={settings}
+                  lastFiredAt={lfa.hydrate}
+                  updateInterval={updateInterval}
+                  toggleEnabled={toggleEnabled}
+                />
+                <Posture
+                  settings={settings}
+                  updateInterval={updateInterval}
+                  toggleEnabled={toggleEnabled}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                <Mindfulness
+                  settings={settings}
+                  updateInterval={updateInterval}
+                  toggleEnabled={toggleEnabled}
+                />
+                <WristCare
+                  settings={settings}
+                  updateInterval={updateInterval}
+                  toggleEnabled={toggleEnabled}
+                />
+              </div>
+
+              <FullReset
+                settings={settings}
+                updateInterval={updateInterval}
+                toggleEnabled={toggleEnabled}
+              />
+            </div>
+
+            <div className="col-span-12 space-y-8 lg:col-span-4">
+              <InfoPanel />
+            </div>
           </div>
+        </TabsContent>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Mindfulness
-              settings={settings}
-              updateInterval={updateInterval}
-              toggleEnabled={toggleEnabled}
-            />
-            <WristCare
-              settings={settings}
-              updateInterval={updateInterval}
-              toggleEnabled={toggleEnabled}
-            />
-          </div>
-
-          <FullReset
+        <TabsContent value="after-hours">
+          <AfterHoursSettingsPanel
             settings={settings}
-            updateInterval={updateInterval}
-            toggleEnabled={toggleEnabled}
+            setSettings={setSettings}
           />
-        </div>
-
-        <div className="col-span-12 lg:col-span-4 space-y-8">
-          <InfoPanel />
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </>
   );
 }

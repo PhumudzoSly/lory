@@ -6,9 +6,20 @@ import {
   nextDueTimestamp,
   type AppSettings,
   type BreakType,
+  type WorkDay,
 } from "../lib/buddyConfig";
 import { playChime } from "../lib/sound";
 import { sendNativeNotification } from "../lib/notification";
+
+const WORKDAY_TO_INDEX: Record<WorkDay, number> = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
 
 type BreakState = {
   nextDueAt: number;
@@ -38,6 +49,33 @@ export const useBreakReminderScheduler = ({
   useEffect(() => {
     const tick = window.setInterval(() => {
       if (isPaused || isSuppressed) {
+        return;
+      }
+
+      // Only fire wellbeing reminders during work hours
+      const nowDate = new Date();
+      const dayIndex = nowDate.getDay();
+      const isWorkDay = settings.workDays.some(
+        (wd) => WORKDAY_TO_INDEX[wd] === dayIndex,
+      );
+      if (!isWorkDay) {
+        return;
+      }
+
+      const [startHour, startMinute] = settings.workStartTime
+        .split(":")
+        .map(Number);
+      const [endHour, endMinute] = settings.workEndTime.split(":").map(Number);
+      const workStart = new Date(nowDate);
+      workStart.setHours(startHour, startMinute, 0, 0);
+      const workEnd = new Date(nowDate);
+      workEnd.setHours(endHour, endMinute, 0, 0);
+
+      if (
+        workEnd.getTime() <= workStart.getTime() ||
+        nowDate.getTime() < workStart.getTime() ||
+        nowDate.getTime() > workEnd.getTime()
+      ) {
         return;
       }
 

@@ -16,8 +16,23 @@ export type BuddySkin =
   | "slate"
   | "charcoal";
 export type WorkDay = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
-export type PendingActionSource = "break" | "work" | "custom";
+export type PendingActionSource = "break" | "work" | "custom" | "afterHours";
 export type PendingActionSection = "wellbeing" | "reminders";
+
+export type AfterHoursSettings = {
+  enabled: boolean;
+  bedtime: string; // HH:mm
+  days: WorkDay[];
+  windDownLeadMinutes: number;
+  screenOffLeadMinutes: number;
+  prepLeadMinutes: number;
+  maxNudgesPerNight: number;
+  cooldownMinutes: number;
+  hydrationNudge: boolean;
+  stretchNudge: boolean;
+  breathingNudge: boolean;
+  reflectionNudge: boolean;
+};
 
 export type BreakSetting = {
   enabled: boolean;
@@ -86,6 +101,7 @@ export type AppSettings = {
   workHoursGoal: number;
   workDays: WorkDay[];
   autoWorkLogging: boolean;
+  afterHours: AfterHoursSettings;
   dailyLogs: Record<string, DailyWorkLog>;
   lastFiredAt: Partial<Record<BreakType, number>>; // epoch ms, written by scheduler when a break fires
   pendingActions: PendingAction[];
@@ -246,6 +262,20 @@ export const buildDefaultSettings = (): AppSettings => ({
   workHoursGoal: 40,
   workDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
   autoWorkLogging: true,
+  afterHours: {
+    enabled: true,
+    bedtime: "22:30",
+    days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    windDownLeadMinutes: 60,
+    screenOffLeadMinutes: 30,
+    prepLeadMinutes: 10,
+    maxNudgesPerNight: 5,
+    cooldownMinutes: 20,
+    hydrationNudge: true,
+    stretchNudge: true,
+    breathingNudge: true,
+    reflectionNudge: true,
+  },
   dailyLogs: {},
   lastFiredAt: {},
   pendingActions: [],
@@ -299,6 +329,47 @@ export function migrateLegacySettings(
   if (typeof merged.autoWorkLogging !== "boolean") {
     merged.autoWorkLogging = true;
   }
+
+  const rawAfterHours =
+    raw.afterHours && typeof raw.afterHours === "object"
+      ? (raw.afterHours as Partial<AfterHoursSettings>)
+      : {};
+  merged.afterHours = {
+    ...base.afterHours,
+    ...rawAfterHours,
+  };
+
+  if (!TIME_RE.test(merged.afterHours.bedtime)) {
+    merged.afterHours.bedtime = base.afterHours.bedtime;
+  }
+
+  if (
+    !Array.isArray(merged.afterHours.days) ||
+    merged.afterHours.days.length === 0
+  ) {
+    merged.afterHours.days = [...base.afterHours.days];
+  }
+
+  merged.afterHours.windDownLeadMinutes = Math.min(
+    180,
+    Math.max(20, Math.round(merged.afterHours.windDownLeadMinutes || 60)),
+  );
+  merged.afterHours.screenOffLeadMinutes = Math.min(
+    merged.afterHours.windDownLeadMinutes - 5,
+    Math.max(10, Math.round(merged.afterHours.screenOffLeadMinutes || 30)),
+  );
+  merged.afterHours.prepLeadMinutes = Math.min(
+    merged.afterHours.screenOffLeadMinutes - 5,
+    Math.max(5, Math.round(merged.afterHours.prepLeadMinutes || 10)),
+  );
+  merged.afterHours.maxNudgesPerNight = Math.min(
+    12,
+    Math.max(1, Math.round(merged.afterHours.maxNudgesPerNight || 5)),
+  );
+  merged.afterHours.cooldownMinutes = Math.min(
+    120,
+    Math.max(5, Math.round(merged.afterHours.cooldownMinutes || 20)),
+  );
 
   const defaultStart =
     typeof raw.workStartTime === "string" && TIME_RE.test(raw.workStartTime)
