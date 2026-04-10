@@ -17,7 +17,10 @@ import { useWindowPersistence } from "./hooks/useWindowPersistence";
 import { useBreakReminderScheduler } from "./hooks/useBreakReminderScheduler";
 import { useWorkReminderScheduler } from "./hooks/useWorkReminderScheduler";
 import { useCustomReminderScheduler } from "./hooks/useCustomReminderScheduler";
-import { useAfterHoursScheduler } from "./hooks/useAfterHoursScheduler";
+import {
+  useNextAfterHoursNudge,
+  useAfterHoursScheduler,
+} from "./hooks/useAfterHoursScheduler";
 import { useAutomaticWorkLog } from "./hooks/useAutomaticWorkLog";
 import { requestNotificationPermissions } from "./lib/notification";
 import "./App.css";
@@ -251,6 +254,8 @@ function App() {
       });
     },
   });
+  const nextNudge = useNextAfterHoursNudge(settings.afterHours);
+
   useAfterHoursScheduler({
     settings,
     mute: settings.mute,
@@ -386,7 +391,11 @@ function App() {
             }}
             onPointerUp={handleBuddyPointerUp}
             skin={settings.buddySkin}
-            name={settings.buddyName}
+            name={
+              nextNudge
+                ? `${settings.buddyName}\nTonight: ${nextNudge.title} at ${nextNudge.time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+                : settings.buddyName
+            }
             onClick={() => {
               if (dragStateRef.current?.dragging) {
                 return;
@@ -415,9 +424,20 @@ function App() {
                     ]
                   : [];
 
+                const nextNudgeMenuItem = nextNudge
+                  ? [
+                      {
+                        id: "next-nudge",
+                        text: `Tonight: ${nextNudge.title} at ${nextNudge.time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`,
+                        enabled: false,
+                      },
+                    ]
+                  : [];
+
                 const menu = await Menu.new({
                   items: [
                     ...pendingMenuItem,
+                    ...nextNudgeMenuItem,
                     {
                       id: "snooze30",
                       text: "Snooze 30m",

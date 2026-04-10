@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AppSettings, WorkDay } from "../lib/buddyConfig";
 import { playChime } from "../lib/sound";
 import { sendNativeNotification } from "../lib/notification";
@@ -55,6 +55,136 @@ type AfterHoursCandidate = {
 };
 
 const NIGHT_END_GRACE_MINUTES = 120;
+
+export const getNextAfterHoursNudge = (
+  afterHours: AppSettings["afterHours"],
+  now: Date = new Date(),
+): { title: string; time: Date; thresholdMinutes: number } | null => {
+  if (!afterHours.enabled) return null;
+
+  const todayIndex = now.getDay();
+  const shouldRunToday = afterHours.days.some(
+    (wd) => WORKDAY_TO_INDEX[wd] === todayIndex,
+  );
+
+  if (!shouldRunToday) return null;
+
+  const [bedHour, bedMinute] = afterHours.bedtime.split(":").map(Number);
+  if (Number.isNaN(bedHour) || Number.isNaN(bedMinute)) return null;
+
+  const bedtime = new Date(now);
+  bedtime.setHours(bedHour, bedMinute, 0, 0);
+
+  const bedtimeMs = bedtime.getTime();
+  const nowMs = now.getTime();
+
+  const candidates: AfterHoursCandidate[] = [
+    {
+      id: "windDown",
+      thresholdMinutes: afterHours.windDownLeadMinutes,
+      title: "Wind-Down Window",
+      description: "Start easing out of work mode.",
+      severity: 1,
+      enabled: true,
+    },
+    {
+      id: "screenOff",
+      thresholdMinutes: afterHours.screenOffLeadMinutes,
+      title: "Screen-Off Soon",
+      description: "Try wrapping up screens now.",
+      severity: 2,
+      enabled: true,
+    },
+    {
+      id: "prep",
+      thresholdMinutes: afterHours.prepLeadMinutes,
+      title: "Sleep Prep",
+      description: "Quick reset.",
+      severity: 2,
+      enabled: true,
+    },
+    {
+      id: "bedtime",
+      thresholdMinutes: 0,
+      title: "Bedtime",
+      description: "Time to close the day and rest.",
+      severity: 3,
+      enabled: true,
+    },
+    {
+      id: "hydrate",
+      thresholdMinutes: Math.min(90, afterHours.windDownLeadMinutes),
+      title: "Evening Hydration",
+      description: "A small sip is enough.",
+      severity: 1,
+      enabled: afterHours.hydrationNudge,
+    },
+    {
+      id: "stretch",
+      thresholdMinutes: 45,
+      title: "Unwind Stretch",
+      description: "Two minutes of neck and shoulder stretching.",
+      severity: 1,
+      enabled: afterHours.stretchNudge,
+    },
+    {
+      id: "breathing",
+      thresholdMinutes: 20,
+      title: "Breathing Reset",
+      description: "Try one minute of slow breathing.",
+      severity: 1,
+      enabled: afterHours.breathingNudge,
+    },
+    {
+      id: "reflection",
+      thresholdMinutes: 5,
+      title: "Close the Loop",
+      description: "Write one win from today.",
+      severity: 1,
+      enabled: afterHours.reflectionNudge,
+    },
+  ];
+
+  const enabledCandidates = candidates
+    .filter((c) => c.enabled && c.thresholdMinutes >= 0)
+    .sort((a, b) => b.thresholdMinutes - a.thresholdMinutes);
+
+  for (const candidate of enabledCandidates) {
+    const triggerTime = new Date(
+      bedtimeMs - candidate.thresholdMinutes * 60_000,
+    );
+    if (triggerTime.getTime() > nowMs) {
+      return {
+        title: candidate.title,
+        time: triggerTime,
+        thresholdMinutes: candidate.thresholdMinutes,
+      };
+    }
+  }
+
+  return null;
+};
+
+export const useNextAfterHoursNudge = (
+  afterHours: AppSettings["afterHours"],
+): { title: string; time: Date; thresholdMinutes: number } | null => {
+  const [next, setNext] = useState<{
+    title: string;
+    time: Date;
+    thresholdMinutes: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const update = () => {
+      setNext(getNextAfterHoursNudge(afterHours));
+    };
+    update();
+    const interval = setInterval(update, 60_000);
+    return () => clearInterval(interval);
+  }, [afterHours]);
+
+  return next;
+};
 
 export const useAfterHoursScheduler = ({
   settings,

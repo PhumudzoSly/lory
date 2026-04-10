@@ -29,8 +29,8 @@ const MENU_ITEMS: Array<{
 }> = [
   { id: "work", label: "Work", icon: IconDeviceLaptop },
   { id: "wellbeing", label: "Wellbeing", icon: IconHeart },
-  { id: "customization", label: "Customization", icon: IconPalette },
   { id: "reminders", label: "Reminders", icon: IconBell },
+  { id: "customization", label: "Customization", icon: IconPalette },
   { id: "about", label: "About", icon: IconInfoCircle },
 ];
 
