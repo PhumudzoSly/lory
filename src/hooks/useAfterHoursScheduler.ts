@@ -195,9 +195,13 @@ export const useAfterHoursScheduler = ({
           severity: 1,
           enabled: afterHours.reflectionNudge,
         },
-      ].filter((candidate) => candidate.enabled);
+      ];
 
-      const due = candidates
+      const enabledCandidates = candidates.filter(
+        (candidate) => candidate.enabled,
+      );
+
+      const due = enabledCandidates
         .filter((candidate) => {
           if (candidate.thresholdMinutes < 0) {
             return false;
