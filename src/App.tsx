@@ -3,7 +3,6 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { Toaster, toast } from "sonner";
 import { BuddyCharacter } from "./components/BuddyCharacter";
 import {
   BREAK_META,
@@ -190,10 +189,10 @@ function App() {
     isSuppressed,
     onBreakTriggered: (breakType) => {
       const meta = BREAK_META[breakType];
-      
-      // Show toast notification
-      toast.info(meta.label, {
-        description: meta.action,
+
+      // Show native notification
+      new Notification(meta.label, {
+        body: meta.action,
       });
 
       upsertPendingAction({
@@ -221,15 +220,15 @@ function App() {
         0: "Clock-Out Time",
       };
 
-      // Show toast notification
+      // Show native notification
       const descriptions: Record<0 | 15 | 30, string> = {
         30: "Time to check in on your work progress",
         15: "You're almost done for the day!",
         0: "Your workday has ended",
       };
 
-      toast.info(labels[milestone], {
-        description: descriptions[milestone],
+      new Notification(labels[milestone], {
+        body: descriptions[milestone],
       });
 
       upsertPendingAction({
@@ -259,14 +258,14 @@ function App() {
             ]
           : reminder.description;
 
-      // Show toast notification
+      // Show native notification
       if (milestone === 0) {
-        toast.info(`Time for: ${reminder.title}`, {
-          description: selectedMessage || "Your custom reminder is due now",
+        new Notification(`Time for: ${reminder.title}`, {
+          body: selectedMessage || "Your custom reminder is due now",
         });
       } else {
-        toast.info(`Upcoming: ${reminder.title}`, {
-          description: `This reminder is due in ${milestone} minutes`,
+        new Notification(`Upcoming: ${reminder.title}`, {
+          body: `This reminder is due in ${milestone} minutes`,
         });
       }
 
@@ -392,12 +391,6 @@ function App() {
 
   return (
     <div className="relative h-full w-full">
-      <Toaster
-        position="top-right"
-        richColors
-        theme="system"
-        closeButton
-      />
       <div className="absolute bottom-0 left-0 flex h-14 w-14 items-center justify-center">
         <div ref={buddyRef} className="relative h-14 w-14">
           <BuddyCharacter

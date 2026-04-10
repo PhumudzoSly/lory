@@ -154,9 +154,9 @@ export function ReminderSettings({
                   Acknowledge these updates to clear buddy escalation.
                 </p>
               </div>
-              <span className="rounded-full bg-amber-500 px-3 py-1 text-xs font-bold text-white">
-                {pendingActions.length} unresolved
-              </span>
+              <h6 className="rounded-full whitespace-nowrap bg-amber-500 px-3 py-1 text-xs font-bold text-white">
+                {pendingActions.length} active
+              </h6>
             </div>
 
             <div className="space-y-3">
@@ -210,10 +210,7 @@ export function ReminderSettings({
               easier.
             </p>
           </div>
-          <Button
-            onClick={openEditorForNewReminder}
-            className="gap-2"
-          >
+          <Button onClick={openEditorForNewReminder} className="gap-2">
             <IconPlus className="size-4" />
             Add Reminder
           </Button>

@@ -35,7 +35,7 @@ when an individual is representing the project or its community.
 ## Reporting
 
 To report unacceptable behavior, email
-`phumudzomahandana+oss@gmail.com`.
+`help@maneja.app`.
 
 All complaints will be reviewed and investigated promptly and fairly.
 

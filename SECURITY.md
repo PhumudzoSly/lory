@@ -10,7 +10,7 @@ Please do not open public issues for security vulnerabilities.
 
 Instead, report privately to:
 
-- Email: `phumudzomahandana+security@gmail.com`
+- Email: `help@maneja.app`
 
 Please include:
 
