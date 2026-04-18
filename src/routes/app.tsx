@@ -8,6 +8,7 @@ import {
 } from "../lib/settingsStorage";
 import { useSettingsSync } from "../hooks/useSettingsSync";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { AuthGate } from "../components/auth/auth-gate";
 
 export const Route = createFileRoute("/app")({
   beforeLoad: async () => {
@@ -75,10 +76,12 @@ function AppLayout() {
   }, []);
 
   return (
-    <AppContext.Provider value={appContextValue}>
-      <Appbar>
-        <Outlet />
-      </Appbar>
-    </AppContext.Provider>
+    <AuthGate>
+      <AppContext.Provider value={appContextValue}>
+        <Appbar>
+          <Outlet />
+        </Appbar>
+      </AppContext.Provider>
+    </AuthGate>
   );
 }
