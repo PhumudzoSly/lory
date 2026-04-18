@@ -6,8 +6,6 @@ import {
   IconCheckbox,
   IconFileText,
   IconTarget,
-  IconUser,
-  IconSettings,
 } from "@tabler/icons-react";
 import {
   Sidebar,
@@ -22,6 +20,7 @@ import {
   SidebarMenuItem,
 } from "../ui/sidebar";
 import { cn } from "@/lib/utils";
+import { UserProfileButton } from "./user-profile-button";
 
 export type SidebarSection =
   | "today"
@@ -35,26 +34,61 @@ export type SidebarSection =
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 
+type NavValue =
+  | "today"
+  | "wellbeing"
+  | "tasks"
+  | "notes"
+  | "goals"
+  | "profile"
+  | "settings";
+
+type NavItem = {
+  readonly title: string;
+  readonly value: NavValue;
+  readonly icon: React.ComponentType<{ className?: string }>;
+};
+
 const topNav = [
   { title: "Today", value: "today", icon: IconCalendarEvent },
   { title: "Wellbeing", value: "wellbeing", icon: IconHeart },
-] as const;
+] as const satisfies readonly NavItem[];
 
 const workGroup = [
   { title: "Tasks", value: "tasks", icon: IconCheckbox },
   { title: "Notes", value: "notes", icon: IconFileText },
   { title: "Goals", value: "goals", icon: IconTarget },
-] as const;
+] as const satisfies readonly NavItem[];
 
-const accountGroup = [
-  { title: "Profile", value: "profile", icon: IconUser },
-  { title: "Settings", value: "settings", icon: IconSettings },
-] as const;
-
-const userProfile = {
-  name: "Phumudzo Mahandana",
-  email: "phumudzo@example.com",
-};
+function NavMenuItem({ item, isActive }: { item: NavItem; isActive: boolean }) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        isActive={isActive}
+        tooltip={item.title}
+        className={cn(
+          "group transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          isActive
+            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
+            : "text-sidebar-foreground/70",
+        )}
+      >
+        <Link to={`/app/${item.value}`} className="flex items-center gap-2">
+          <item.icon
+            className={cn(
+              "size-4 shrink-0 transition-all",
+              isActive
+                ? "text-primary opacity-100"
+                : "opacity-70 group-hover:opacity-100",
+            )}
+          />
+          <span>{item.title}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
 
 export function AppSidebar({ ...props }: AppSidebarProps) {
   const location = useLocation();
@@ -98,28 +132,13 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {topNav.map((item) => {
-                const isActive = isItemActive(item.value);
-                return (
-                  <SidebarMenuItem key={item.value}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={item.title}
-                      className={cn(
-                        "transition-all duration-200",
-                        isActive &&
-                          "border-r-8 border-r-foreground bg-linear-60 from-transparent via-transparent to-foreground/40",
-                      )}
-                    >
-                      <Link to={`/app/${item.value}`}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {topNav.map((item) => (
+                <NavMenuItem
+                  key={item.value}
+                  item={item}
+                  isActive={isItemActive(item.value)}
+                />
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -128,90 +147,19 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
           <SidebarGroupLabel>Work</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {workGroup.map((item) => {
-                const isActive = isItemActive(item.value);
-                return (
-                  <SidebarMenuItem key={item.value}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      className={cn(
-                        "transition-all duration-200",
-                        isActive &&
-                          "border-r-8 border-r-foreground bg-linear-60 from-transparent via-transparent to-foreground/40",
-                      )}
-                      tooltip={item.title}
-                    >
-                      <Link to={`/app/${item.value}`}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {accountGroup.map((item) => {
-                const isActive = isItemActive(item.value);
-                return (
-                  <SidebarMenuItem key={item.value}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={item.title}
-                      className={cn(
-                        "transition-all duration-200",
-                        isActive &&
-                          "border-r-8 border-r-foreground bg-linear-60 from-transparent via-transparent to-foreground/40",
-                      )}
-                    >
-                      <Link to={`/app/${item.value}`}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {workGroup.map((item) => (
+                <NavMenuItem
+                  key={item.value}
+                  item={item}
+                  isActive={isItemActive(item.value)}
+                />
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-2 border-t border-sidebar-border">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              size="lg"
-              isActive={isItemActive("profile")}
-              className="h-10 w-full gap-2 p-1.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors"
-              tooltip={userProfile.name}
-            >
-              <Link to="/app/profile">
-                <div className="flex size-6 shrink-0 items-center justify-center rounded-sm bg-sidebar-accent border border-sidebar-border">
-                  <span className="text-[10px] font-medium text-sidebar-accent-foreground">
-                    PM
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col items-start justify-center overflow-hidden group-data-[collapsible=icon]:hidden">
-                  <span className="truncate w-full text-[13px] font-medium leading-none mb-0.5">
-                    {userProfile.name}
-                  </span>
-                  <span className="truncate w-full text-[11px] text-muted-foreground leading-none">
-                    Free Plan
-                  </span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <UserProfileButton />
       </SidebarFooter>
     </Sidebar>
   );

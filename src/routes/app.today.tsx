@@ -1,4 +1,5 @@
 import Work from "@/components/today/work";
+import AiNudge from "@/components/today/ai-nudge";
 import { TaskList, Task } from "@/components/tasks/task-list";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -33,15 +34,14 @@ export const Route = createFileRoute("/app/today")({
     ];
 
     return (
-      <div className="space-y-16">
+      <div className="space-y-16 mx-auto max-w-6xl px-4">
         <Work />
-        <div className="mx-auto max-w-175 px-4 pb-20">
-          <TaskList
-            tasks={tasks}
-            title="Today's Tasks"
-            description="Focus on high-priority items first. Don't forget to take breaks."
-          />
-        </div>
+        <AiNudge />
+        <TaskList
+          tasks={tasks}
+          title="Today's Tasks"
+          description="Focus on high-priority items first. Don't forget to take breaks."
+        />
       </div>
     );
   },

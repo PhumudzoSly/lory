@@ -5,6 +5,9 @@ import {
   IconHourglassHigh,
   IconCalendar,
 } from "@tabler/icons-react";
+import OffDay from "./off-day";
+import { ShiftModals } from "./shift-modals";
+import ShiftStart from "./shift-start";
 
 /**
  * Work component - Notion inspired summary of today's progress.
@@ -17,6 +20,13 @@ const Work = () => {
     month: "long",
     day: "numeric",
   });
+
+  const isWeekend = today.getDay() === 0 || today.getDay() === 6;
+  const [isOffDay, setIsOffDay] = useState(isWeekend);
+  const [shiftState, setShiftState] = useState<"not-started" | "in-progress">(
+    "not-started",
+  );
+  const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
 
   const [remainingTime, setRemainingTime] = useState("0h 0m");
 
@@ -67,8 +77,34 @@ const Work = () => {
     },
   ];
 
+  if (isOffDay) {
+    return <OffDay onStartWorking={() => setIsOffDay(false)} />;
+  }
+
+  if (shiftState === "not-started") {
+    return (
+      <>
+        <ShiftStart
+          dateString={dateString}
+          onTakeDayOff={() => setIsOffDay(true)}
+          onStartShiftClick={() => setIsShiftModalOpen(true)}
+        />
+        <ShiftModals
+          shiftState={shiftState}
+          isOpen={isShiftModalOpen}
+          onOpenChange={setIsShiftModalOpen}
+          onStartShift={(data) => {
+            console.log("Shift started with:", data);
+            setShiftState("in-progress");
+          }}
+          onEndShift={() => {}}
+        />
+      </>
+    );
+  }
+
   return (
-    <div className="mx-auto max-w-[700px] space-y-10 py-6 px-4">
+    <div className="mx-auto  space-y-10 py-6 px-4">
       {/* Date Header: Minimal, tracking-widest, subtle hover */}
       <header className="space-y-3">
         <div className="flex w-fit items-center gap-2 border-b border-transparent pb-0.5 text-muted-foreground/30 transition-colors group hover:border-border/40">
@@ -83,9 +119,17 @@ const Work = () => {
         </div>
 
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground/80">
-            Today
-          </h1>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground/80">
+              Today
+            </h1>
+            <button
+              onClick={() => setIsOffDay(true)}
+              className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/40 hover:text-foreground/70 transition-colors"
+            >
+              Take the day off
+            </button>
+          </div>
           <p className="max-w-2xl text-[13px] font-normal leading-relaxed text-muted-foreground/60">
             Overview of your workday progress and upcoming milestones.
           </p>
@@ -129,14 +173,29 @@ const Work = () => {
             </span>
           </div>
 
-          <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/20">
-            {new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsShiftModalOpen(true)}
+              className="text-[11px] font-semibold uppercase tracking-wider text-red-500/60 hover:text-red-500 transition-colors"
+            >
+              End Shift Early
+            </button>
+            <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/20">
+              {new Date().toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </div>
           </div>
         </div>
       </div>
+      <ShiftModals
+        shiftState={shiftState}
+        isOpen={isShiftModalOpen}
+        onOpenChange={setIsShiftModalOpen}
+        onStartShift={() => {}}
+        onEndShift={() => setShiftState("not-started")}
+      />
     </div>
   );
 };

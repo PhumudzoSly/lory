@@ -74,9 +74,8 @@ export const TaskList = ({ tasks, title, description }: TaskListProps) => {
             className="w-full text-left group flex items-start justify-between rounded px-2 py-2.5 transition-colors hover:bg-secondary/30 focus-visible:outline-none focus-visible:bg-secondary/30"
           >
             <div className="flex items-start gap-3">
-              <div
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
                 onClick={(e) => e.stopPropagation()}
                 className="task-list-checkbox mt-0.5 shrink-0 text-muted-foreground/30 transition-colors hover:text-foreground/50"
               >
@@ -85,7 +84,7 @@ export const TaskList = ({ tasks, title, description }: TaskListProps) => {
                 ) : (
                   <IconCircle size={14} />
                 )}
-              </div>
+              </button>
 
               <div className="flex flex-col gap-0.5">
                 <span
