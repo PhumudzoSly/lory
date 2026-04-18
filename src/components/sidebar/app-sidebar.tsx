@@ -6,7 +6,6 @@ import {
   IconCheckbox,
   IconFileText,
   IconTarget,
-  IconFolderCog,
 } from "@tabler/icons-react";
 import {
   Sidebar,
@@ -22,6 +21,7 @@ import {
 } from "../ui/sidebar";
 import { cn } from "@/lib/utils";
 import { UserProfileButton } from "./user-profile-button";
+import { SidebarProjects } from "./sidebar-projects";
 
 export type SidebarSection =
   | "today"
@@ -58,7 +58,6 @@ const topNav = [
 ] as const satisfies readonly NavItem[];
 
 const workGroup = [
-  { title: "Projects", value: "projects", icon: IconFolderCog },
   { title: "Tasks", value: "tasks", icon: IconCheckbox },
   { title: "Notes", value: "notes", icon: IconFileText },
   { title: "Goals", value: "goals", icon: IconTarget },
@@ -161,6 +160,8 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarProjects />
       </SidebarContent>
       <SidebarFooter className="p-2 border-t border-sidebar-border">
         <UserProfileButton />

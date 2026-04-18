@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { api } from "../../../convex/_generated/api";
 import { StatusSwitcher, type TaskStatus } from "./status-switcher";
 import { DateSwitcher } from "./date-switcher";
+import { ProjectSelector } from "./project-selector";
 
 export function CreateTaskDialog() {
   const [open, setOpen] = useState(false);
@@ -25,7 +26,7 @@ export function CreateTaskDialog() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("todo");
   const [time, setTime] = useState<string | undefined>();
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState<string | undefined>();
 
   const handleCreate = async () => {
     if (!title.trim()) return;
@@ -35,14 +36,14 @@ export function CreateTaskDialog() {
         description: description.trim() || undefined,
         status,
         time,
-        projectId: (projectId.trim() as any) || undefined,
+        projectId: projectId as any,
       });
       setOpen(false);
       setTitle("");
       setDescription("");
       setStatus("todo");
       setTime(undefined);
-      setProjectId("");
+      setProjectId(undefined);
     } catch (e) {
       console.error(e);
     }
@@ -97,11 +98,9 @@ export function CreateTaskDialog() {
 
           <div className="grid gap-2">
             <Label htmlFor="project">Project</Label>
-            <Input
-              id="project"
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              placeholder="Project (optional)"
+            <ProjectSelector
+              projectId={projectId}
+              onProjectChange={setProjectId}
             />
           </div>
 

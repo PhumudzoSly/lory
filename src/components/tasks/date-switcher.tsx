@@ -8,18 +8,21 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { Matcher } from "react-day-picker";
 
 interface DateSwitcherProps {
   readonly date?: string;
   readonly onDateChange: (date?: string) => void;
   readonly className?: string;
   readonly withLabel?: boolean;
+  readonly disabled?: Matcher | Matcher[];
 }
 
 export function DateSwitcher({
   date,
   onDateChange,
   className,
+  disabled,
 }: DateSwitcherProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -42,7 +45,7 @@ export function DateSwitcher({
             e.stopPropagation();
           }}
           className={cn(
-            "flex items-center gap-2 rounded px-2 py-1 transition-colors hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border",
+            "flex items-center border gap-2 rounded px-2 py-1 transition-colors hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border",
             !date && "text-muted-foreground/50",
             className,
           )}
@@ -73,6 +76,7 @@ export function DateSwitcher({
             onDateChange(newDate ? newDate.toISOString() : undefined);
             setOpen(false);
           }}
+          disabled={disabled}
           defaultMonth={parsedDate}
           initialFocus
         />
