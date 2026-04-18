@@ -17,15 +17,6 @@ dependencies:
   '@tauri-apps/api':
     specifier: ^2
     version: 2.10.1
-  '@tauri-apps/plugin-notification':
-    specifier: ~2
-    version: 2.3.3
-  '@tauri-apps/plugin-opener':
-    specifier: ^2.5.3
-    version: 2.5.3
-  '@tauri-apps/plugin-process':
-    specifier: ^2.3.1
-    version: 2.3.1
   class-variance-authority:
     specifier: ^0.7.1
     version: 0.7.1
@@ -66,8 +57,8 @@ dependencies:
     specifier: 3.8.0
     version: 3.8.0(@types/react@19.2.14)(react-dom@19.2.4)(react-is@19.2.4)(react@19.2.4)(redux@5.0.1)
   shadcn:
-    specifier: ^4.1.2
-    version: 4.1.2(typescript@5.8.3)
+    specifier: ^4.3.0
+    version: 4.3.0(typescript@5.8.3)
   tailwind-merge:
     specifier: ^3.5.0
     version: 3.5.0
@@ -2896,24 +2887,6 @@ packages:
       '@tauri-apps/cli-win32-x64-msvc': 2.10.1
     dev: true
 
-  /@tauri-apps/plugin-notification@2.3.3:
-    resolution: {integrity: sha512-Zw+ZH18RJb41G4NrfHgIuofJiymusqN+q8fGUIIV7vyCH+5sSn5coqRv/MWB9qETsUs97vmU045q7OyseCV3Qg==}
-    dependencies:
-      '@tauri-apps/api': 2.10.1
-    dev: false
-
-  /@tauri-apps/plugin-opener@2.5.3:
-    resolution: {integrity: sha512-CCcUltXMOfUEArbf3db3kCE7Ggy1ExBEBl51Ko2ODJ6GDYHRp1nSNlQm5uNCFY5k7/ufaK5Ib3Du/Zir19IYQQ==}
-    dependencies:
-      '@tauri-apps/api': 2.10.1
-    dev: false
-
-  /@tauri-apps/plugin-process@2.3.1:
-    resolution: {integrity: sha512-nCa4fGVaDL/B9ai03VyPOjfAHRHSBz5v6F/ObsB73r/dA3MHHhZtldaDMIc0V/pnUw9ehzr2iEG+XkSEyC0JJA==}
-    dependencies:
-      '@tauri-apps/api': 2.10.1
-    dev: false
-
   /@ts-morph/common@0.27.0:
     resolution: {integrity: sha512-Wf29UqxWDpc+i61k3oIOzcUfQt79PIT9y/MWfAGlrkjg6lBC1hwDECLXPVJAhWjiGbfBCxZd65F/LIZF3+jeJQ==}
     dependencies:
@@ -5721,8 +5694,8 @@ packages:
     resolution: {integrity: sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==}
     dev: false
 
-  /shadcn@4.1.2(typescript@5.8.3):
-    resolution: {integrity: sha512-qNQcCavkbYsgBj+X09tF2bTcwRd8abR880bsFkDU2kMqceMCLAm5c+cLg7kWDhfh1H9g08knpQ5ZEf6y/co16g==}
+  /shadcn@4.3.0(typescript@5.8.3):
+    resolution: {integrity: sha512-7vhnBh2LVLyxOd1ZQWwXv7OATCnQcxdqc8FbZdNigZriNOwDsHklQmPpvPt1jcrFK5mzMI+cyuAYv8WzERx2Og==}
     hasBin: true
     dependencies:
       '@babel/core': 7.29.0
