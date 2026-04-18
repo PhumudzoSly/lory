@@ -6,6 +6,7 @@ import {
   IconCheckbox,
   IconFileText,
   IconTarget,
+  IconFolderCog,
 } from "@tabler/icons-react";
 import {
   Sidebar,
@@ -30,6 +31,7 @@ export type SidebarSection =
   | "goals"
   | "profile"
   | "settings"
+  | "projects"
   | "customization";
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
@@ -40,6 +42,7 @@ type NavValue =
   | "tasks"
   | "notes"
   | "goals"
+  | "projects"
   | "profile"
   | "settings";
 
@@ -55,6 +58,7 @@ const topNav = [
 ] as const satisfies readonly NavItem[];
 
 const workGroup = [
+  { title: "Projects", value: "projects", icon: IconFolderCog },
   { title: "Tasks", value: "tasks", icon: IconCheckbox },
   { title: "Notes", value: "notes", icon: IconFileText },
   { title: "Goals", value: "goals", icon: IconTarget },

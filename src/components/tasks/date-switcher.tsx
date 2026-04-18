@@ -20,16 +20,15 @@ export function DateSwitcher({
   date,
   onDateChange,
   className,
-  withLabel = false,
 }: DateSwitcherProps) {
   const [open, setOpen] = React.useState(false);
 
   const parsedDate = date ? new Date(date) : undefined;
-  
+
   // Format for display: e.g. "Today", "Tomorrow", or "Apr 18"
   const getDisplayDate = () => {
     if (!parsedDate) return "No date";
-    
+
     // Could add more complex natural language date parsing here
     return format(parsedDate, "MMM d, yyyy");
   };
@@ -48,7 +47,10 @@ export function DateSwitcher({
             className,
           )}
         >
-          <IconCalendar size={14} className={date ? "text-blue-500/80" : "opacity-70"} />
+          <IconCalendar
+            size={14}
+            className={date ? "text-blue-500/80" : "opacity-70"}
+          />
           <span
             className={cn(
               "text-[12px] font-medium transition-colors",
@@ -76,13 +78,13 @@ export function DateSwitcher({
         />
         <div className="border-t p-2">
           <button
-             type="button"
-             onClick={(e) => {
-               e.stopPropagation();
-               onDateChange(undefined);
-               setOpen(false);
-             }}
-             className="w-full rounded bg-secondary/20 px-2 py-1 text-center text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDateChange(undefined);
+              setOpen(false);
+            }}
+            className="w-full rounded bg-secondary/20 px-2 py-1 text-center text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
           >
             Clear
           </button>

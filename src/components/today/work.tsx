@@ -8,7 +8,9 @@ import {
 } from "@tabler/icons-react";
 import { api } from "../../../convex/_generated/api";
 import OffDay from "./off-day";
+import { DoneForDay } from "./done-for-day";
 import { ShiftModals } from "./shift-modals";
+import { ContinueShiftModal } from "./continue-shift-modal";
 import ShiftStart from "./shift-start";
 
 const DAY_KEYS = [
@@ -114,6 +116,7 @@ const Work = () => {
     "not-started",
   );
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
+  const [isContinueModalOpen, setIsContinueModalOpen] = useState(false);
   const [activeShift, setActiveShift] = useState<{
     startTime: string;
     endTime: string;
@@ -301,6 +304,44 @@ const Work = () => {
     );
   }
 
+  const isSessionEnded = todayWorked?.sessionEndedAt;
+
+  if (isSessionEnded && todayWorked.sessionEndedAt) {
+    const startTimeMinutes = toMinutes(todayWorked.startTime) || 0;
+    const sessionEndedDate = new Date(todayWorked.sessionEndedAt);
+    const sessionEndedMinutes =
+      sessionEndedDate.getHours() * 60 + sessionEndedDate.getMinutes();
+    const actualWorkedMinutes = Math.max(
+      sessionEndedMinutes - startTimeMinutes,
+      0,
+    );
+
+    return (
+      <>
+        <DoneForDay
+          workedMinutes={actualWorkedMinutes}
+          onStartWorking={() => setIsContinueModalOpen(true)}
+        />
+        <ContinueShiftModal
+          isOpen={isContinueModalOpen}
+          onOpenChange={setIsContinueModalOpen}
+          defaultEndTime={"17:00"}
+          minTime={toTimeKey(new Date())}
+          onContinue={(newEndTime) => {
+            upsertDayWorked({
+              date: todayDateKey,
+              startTime: todayWorked.startTime,
+              endTime: newEndTime,
+              workMode: todayWorked.workMode,
+            }).then(() => {
+              setManualWorkOverride(true);
+            });
+          }}
+        />
+      </>
+    );
+  }
+
   if (isOffDay) {
     return (
       <OffDay
@@ -333,7 +374,8 @@ const Work = () => {
             void (async () => {
               setIsPersistingShift(true);
               try {
-                const startTimeForSave = todayWorked?.startTime ?? data.startTime;
+                const startTimeForSave =
+                  todayWorked?.startTime ?? data.startTime;
                 await upsertDayWorked({
                   date: todayDateKey,
                   startTime: startTimeForSave,

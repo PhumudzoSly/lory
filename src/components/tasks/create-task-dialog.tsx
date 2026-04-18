@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
-import { IconPlus, IconCalendar, IconFolder } from "@tabler/icons-react";
+import { IconPlus } from "@tabler/icons-react";
 import {
   Dialog,
   DialogContent,
@@ -10,10 +10,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { api } from "../../../convex/_generated/api";
 import { StatusSwitcher, type TaskStatus } from "./status-switcher";
 import { DateSwitcher } from "./date-switcher";
-import { InlineTextarea } from "./inline-textarea";
 
 export function CreateTaskDialog() {
   const [open, setOpen] = useState(false);
@@ -23,7 +25,7 @@ export function CreateTaskDialog() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("todo");
   const [time, setTime] = useState<string | undefined>();
-  const [project, setProject] = useState("");
+  const [projectId, setProjectId] = useState("");
 
   const handleCreate = async () => {
     if (!title.trim()) return;
@@ -33,14 +35,14 @@ export function CreateTaskDialog() {
         description: description.trim() || undefined,
         status,
         time,
-        project: project.trim() || undefined,
+        projectId: (projectId.trim() as any) || undefined,
       });
       setOpen(false);
       setTitle("");
       setDescription("");
       setStatus("todo");
       setTime(undefined);
-      setProject("");
+      setProjectId("");
     } catch (e) {
       console.error(e);
     }
@@ -49,82 +51,73 @@ export function CreateTaskDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 h-8 text-xs font-medium">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 h-8 text-xs font-medium"
+        >
           <IconPlus size={14} />
           New Task
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-106.25 p-0 gap-0 border-border/10 focus-visible:outline-none">
-        <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="text-xl font-bold">Create Task</DialogTitle>
+      <DialogContent className="sm:max-w-106.25">
+        <DialogHeader>
+          <DialogTitle>Create Task</DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 py-4 space-y-6">
-          <div className="space-y-1">
-            <span className="text-[11px] font-bold tracking-widest text-muted-foreground/50 uppercase">
-              Title
-            </span>
-            <InlineTextarea
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
               value={title}
-              onChange={setTitle}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="What needs to be done?"
-              className="text-lg font-medium min-h-10"
             />
           </div>
 
-          <div className="grid grid-cols-[100px_1fr] items-center gap-4 py-1">
-            <div className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/50">
-              Status
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>Status</Label>
+              <div>
+                <StatusSwitcher
+                  status={status}
+                  withLabel
+                  onStatusChange={setStatus}
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-[12px] font-medium text-foreground/70">
-              <StatusSwitcher
-                status={status}
-                withLabel
-                onStatusChange={setStatus}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-[100px_1fr] items-center gap-4 py-1">
-            <div className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/50">
-              <IconCalendar size={14} stroke={2} className="opacity-70" />
-              Date
-            </div>
-            <div className="text-[12px] font-medium text-foreground/70">
-              <DateSwitcher date={time} onDateChange={setTime} />
+            <div className="grid gap-2">
+              <Label>Due Date</Label>
+              <div>
+                <DateSwitcher date={time} onDateChange={setTime} />
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-[100px_1fr] items-center gap-4 py-1">
-            <div className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/50">
-              <IconFolder size={14} stroke={2} className="opacity-70" />
-              Project
-            </div>
-            <div className="text-[12px] font-medium text-foreground/70">
-              <input
-                type="text"
-                value={project}
-                onChange={(e) => setProject(e.target.value)}
-                placeholder="Inbox"
-                className="w-full bg-transparent border-none outline-none focus:ring-0 p-0 m-0 cursor-text hover:bg-secondary/30 rounded px-1 -mx-1 transition-colors"
-              />
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="project">Project</Label>
+            <Input
+              id="project"
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              placeholder="Project (optional)"
+            />
           </div>
 
-          <div className="space-y-1 pt-2">
-            <span className="text-[11px] font-bold tracking-widest text-muted-foreground/50 uppercase">
-              Description
-            </span>
-            <InlineTextarea
+          <div className="grid gap-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
               value={description}
-              onChange={setDescription}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Add more details..."
-              className="text-[13px] leading-relaxed text-muted-foreground/80 min-h-20"
+              className="min-h-25 resize-none"
             />
           </div>
         </div>
 
-        <DialogFooter className="px-6 py-4 bg-secondary/10 border-t border-border/10 flex justify-end">
+        <DialogFooter>
           <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
             Cancel
           </Button>

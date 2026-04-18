@@ -66,6 +66,8 @@ export default defineSchema({
     name: v.string(),
     description: v.optional(v.string()),
     color: v.optional(v.string()),
+    startDate: v.optional(v.string()),
+    dueDate: v.optional(v.string()),
   }).index("by_user", ["userId"]),
 
   tasks: defineTable({

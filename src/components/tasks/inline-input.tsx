@@ -14,7 +14,6 @@ export function InlineInput({
   onChange,
   className,
   placeholder,
-  autoFocus,
 }: InlineInputProps) {
   const [isEditing, setIsEditing] = React.useState(false);
   const [internalValue, setInternalValue] = React.useState(value);

@@ -2,48 +2,51 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { taskStatus } from "./schema";
 import { requireUserId } from "./work";
+import { Id } from "./_generated/dataModel";
 
 export const list = query({
   args: {
     status: v.optional(taskStatus),
+    excludeStatus: v.optional(taskStatus),
     searchQuery: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
 
     if (args.searchQuery) {
-      if (args.status) {
-        return await ctx.db
-          .query("tasks")
-          .withSearchIndex("search_title", (q) =>
-            q
-              .search("title", args.searchQuery!)
-              .eq("userId", userId)
-              .eq("status", args.status!),
-          )
-          .collect();
-      }
-      return await ctx.db
+      const q = ctx.db
         .query("tasks")
         .withSearchIndex("search_title", (q) =>
-          q.search("title", args.searchQuery!).eq("userId", userId),
-        )
-        .collect();
+          q.search("title", args.searchQuery!).eq("userId", userId)
+        );
+
+      let results = await q.collect();
+
+      if (args.status) {
+        results = results.filter((t) => t.status === args.status);
+      }
+      if (args.excludeStatus) {
+        results = results.filter((t) => t.status !== args.excludeStatus);
+      }
+      return results;
     }
+
+    let q = ctx.db
+      .query("tasks")
+      .withIndex("by_user", (q) => q.eq("userId", userId));
 
     if (args.status) {
-      return await ctx.db
+      q = ctx.db
         .query("tasks")
         .withIndex("by_user_and_status", (q) =>
-          q.eq("userId", userId).eq("status", args.status!),
-        )
-        .collect();
+          q.eq("userId", userId).eq("status", args.status!)
+        );
+    } else if (args.excludeStatus) {
+      q = q.filter((q) => q.neq(q.field("status"), args.excludeStatus!));
     }
 
-    return await ctx.db
-      .query("tasks")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+    const results = await q.collect();
+    return results;
   },
 });
 
@@ -55,7 +58,7 @@ export const getById = query({
     const userId = await requireUserId(ctx);
     const task = await ctx.db.get(args.taskId);
 
-    if (!task || task.userId !== userId) {
+    if (!task || task?.userId !== userId) {
       return null;
     }
 
@@ -98,7 +101,7 @@ export const update = mutation({
     const userId = await requireUserId(ctx);
     const task = await ctx.db.get(args.taskId);
 
-    if (!task || task.userId !== userId) {
+    if (!task || task?.userId !== userId) {
       throw new ConvexError("Task not found");
     }
 
@@ -106,7 +109,7 @@ export const update = mutation({
       title?: string;
       description?: string;
       status?: "todo" | "in_progress" | "done";
-      projectId?: string;
+      projectId?: Id<"projects">;
       time?: string;
     } = {};
 
@@ -134,7 +137,7 @@ export const setStatus = mutation({
     const userId = await requireUserId(ctx);
     const task = await ctx.db.get(args.taskId);
 
-    if (!task || task.userId !== userId) {
+    if (!task || task?.userId !== userId) {
       throw new ConvexError("Task not found");
     }
 
@@ -154,7 +157,7 @@ export const remove = mutation({
     const userId = await requireUserId(ctx);
     const task = await ctx.db.get(args.taskId);
 
-    if (!task || task.userId !== userId) {
+    if (!task || task?.userId !== userId) {
       throw new ConvexError("Task not found");
     }
 

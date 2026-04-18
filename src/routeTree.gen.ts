@@ -16,6 +16,7 @@ import { Route as AppWellbeingRouteImport } from './routes/app.wellbeing'
 import { Route as AppTodayRouteImport } from './routes/app.today'
 import { Route as AppTasksRouteImport } from './routes/app.tasks'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppProjectsRouteImport } from './routes/app.projects'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppNotesRouteImport } from './routes/app.notes'
 import { Route as AppGoalsRouteImport } from './routes/app.goals'
@@ -56,6 +57,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProjectsRoute = AppProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/app/goals': typeof AppGoalsRoute
   '/app/notes': typeof AppNotesRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/projects': typeof AppProjectsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/tasks': typeof AppTasksRoute
   '/app/today': typeof AppTodayRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/app/goals': typeof AppGoalsRoute
   '/app/notes': typeof AppNotesRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/projects': typeof AppProjectsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/tasks': typeof AppTasksRoute
   '/app/today': typeof AppTodayRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/app/goals': typeof AppGoalsRoute
   '/app/notes': typeof AppNotesRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/projects': typeof AppProjectsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/tasks': typeof AppTasksRoute
   '/app/today': typeof AppTodayRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/app/goals'
     | '/app/notes'
     | '/app/profile'
+    | '/app/projects'
     | '/app/settings'
     | '/app/tasks'
     | '/app/today'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/app/goals'
     | '/app/notes'
     | '/app/profile'
+    | '/app/projects'
     | '/app/settings'
     | '/app/tasks'
     | '/app/today'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/app/goals'
     | '/app/notes'
     | '/app/profile'
+    | '/app/projects'
     | '/app/settings'
     | '/app/tasks'
     | '/app/today'
@@ -213,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/projects': {
+      id: '/app/projects'
+      path: '/projects'
+      fullPath: '/app/projects'
+      preLoaderRoute: typeof AppProjectsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/profile': {
       id: '/app/profile'
       path: '/profile'
@@ -249,6 +268,7 @@ interface AppRouteChildren {
   AppGoalsRoute: typeof AppGoalsRoute
   AppNotesRoute: typeof AppNotesRoute
   AppProfileRoute: typeof AppProfileRoute
+  AppProjectsRoute: typeof AppProjectsRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppTasksRoute: typeof AppTasksRoute
   AppTodayRoute: typeof AppTodayRoute
@@ -261,6 +281,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppGoalsRoute: AppGoalsRoute,
   AppNotesRoute: AppNotesRoute,
   AppProfileRoute: AppProfileRoute,
+  AppProjectsRoute: AppProjectsRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppTasksRoute: AppTasksRoute,
   AppTodayRoute: AppTodayRoute,
