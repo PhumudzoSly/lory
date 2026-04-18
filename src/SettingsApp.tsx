@@ -1,91 +1,46 @@
 import { useEffect, useState } from "react";
-import { emit, listen } from "@tauri-apps/api/event";
-import { load as loadStore } from "@tauri-apps/plugin-store";
 import { type AppSettings, type BuddySkin } from "./lib/buddyConfig";
-import { readInitialSettings } from "./lib/settingsStorage";
+import {
+  readInitialSettings,
+  readPersistedSettings,
+} from "./lib/settingsStorage";
+import { useSettingsSync } from "./hooks/useSettingsSync";
 import Appbar from "./components/sidebar/app-bar";
 import type { SidebarSection } from "./components/sidebar/app-sidebar";
 
-const APP_STORAGE_KEY = "Lory.settings.v1";
-const STORE_FILE = "Lory.json";
-const STORE_SETTINGS_KEY = "settings.data";
-
 export default function SettingsApp() {
   const [settings, setSettings] = useState<AppSettings>(readInitialSettings);
+  const [settingsHydrated, setSettingsHydrated] = useState(false);
   const [requestedSection, setRequestedSection] =
-    useState<SidebarSection>("work");
-  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+    useState<SidebarSection>("customization");
+
+  useSettingsSync({
+    settings,
+    setSettings,
+    origin: "settings",
+    isReady: settingsHydrated,
+  });
 
   useEffect(() => {
-    const search = new URLSearchParams(window.location.search);
+    const search = new URLSearchParams(globalThis.location.search);
     const section = search.get("section");
-    const pendingId = search.get("pendingActionId");
-    const allowed: SidebarSection[] = [
-      "work",
-      "wellbeing",
-      "customization",
-      "reminders",
-      "about",
-    ];
+    const allowed: SidebarSection[] = ["customization"];
 
     if (section && allowed.includes(section as SidebarSection)) {
       setRequestedSection(section as SidebarSection);
     }
-
-    if (pendingId) {
-      setPendingActionId(pendingId);
-    }
   }, []);
 
   useEffect(() => {
-    const syncSettings = async () => {
-      await emit("buddy-settings-updated", settings);
-      window.localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(settings));
-      const store = await loadStore(STORE_FILE, {
-        defaults: {},
-        autoSave: true,
-      });
-      await store.set(STORE_SETTINGS_KEY, settings);
-    };
-    void syncSettings();
-  }, [settings]);
-
-  // Pick up lastFiredAt updates written by the buddy window (separate WebviewWindow)
-  useEffect(() => {
-    const handler = (e: StorageEvent) => {
-      if (e.key !== APP_STORAGE_KEY || !e.newValue) return;
-      try {
-        const parsed = JSON.parse(e.newValue) as Partial<AppSettings>;
-        if (parsed.lastFiredAt) {
-          setSettings((prev) => ({
-            ...prev,
-            lastFiredAt: parsed.lastFiredAt!,
-          }));
-        }
-      } catch {
-        // ignore malformed data
+    const hydrateSettings = async () => {
+      const persisted = await readPersistedSettings();
+      if (persisted) {
+        setSettings(persisted);
       }
+      setSettingsHydrated(true);
     };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
-  }, []);
 
-  useEffect(() => {
-    const unlistenPromise = listen<{
-      section?: SidebarSection;
-      pendingActionId?: string;
-    }>("buddy-open-target", (event) => {
-      if (event.payload.section) {
-        setRequestedSection(event.payload.section);
-      }
-      if (event.payload.pendingActionId) {
-        setPendingActionId(event.payload.pendingActionId);
-      }
-    });
-
-    return () => {
-      void unlistenPromise.then((unlisten) => unlisten());
-    };
+    void hydrateSettings();
   }, []);
 
   const skinSwatchClass: Record<BuddySkin, string> = {
@@ -105,8 +60,6 @@ export default function SettingsApp() {
       setSettings={setSettings}
       skinSwatchClass={skinSwatchClass}
       requestedSection={requestedSection}
-      highlightedPendingActionId={pendingActionId}
-      onPendingActionHandled={() => setPendingActionId(null)}
     />
   );
 }

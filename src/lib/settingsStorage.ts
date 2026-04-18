@@ -1,16 +1,25 @@
-import { buildDefaultSettings, migrateLegacySettings, type AppSettings } from "./buddyConfig";
-
-export const APP_STORAGE_KEY = "Lory.settings.v1";
+import {
+  buildDefaultSettings,
+  migrateLegacySettings,
+  type AppSettings,
+} from "./buddyConfig";
+import { readSqliteJson, SQLITE_KEYS } from "./sqliteStorage";
 
 export const readInitialSettings = (): AppSettings => {
-  const raw = window.localStorage.getItem(APP_STORAGE_KEY);
+  return buildDefaultSettings();
+};
+
+export const readPersistedSettings = async (): Promise<AppSettings | null> => {
+  const raw = await readSqliteJson<Record<string, unknown>>(
+    SQLITE_KEYS.settings,
+  );
   if (!raw) {
-    return buildDefaultSettings();
+    return null;
   }
 
   try {
-    return migrateLegacySettings(JSON.parse(raw) as Record<string, unknown>);
+    return migrateLegacySettings(raw);
   } catch {
-    return buildDefaultSettings();
+    return null;
   }
 };
