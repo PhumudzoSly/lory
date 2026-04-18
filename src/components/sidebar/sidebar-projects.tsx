@@ -11,7 +11,9 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  useSidebar,
 } from "../ui/sidebar";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
@@ -19,6 +21,7 @@ import { CreateProjectDialog } from "./create-project-dialog";
 
 export function SidebarProjects() {
   const location = useLocation();
+  const { state } = useSidebar();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
 
@@ -27,6 +30,77 @@ export function SidebarProjects() {
   const filteredProjects = projects.filter((project) =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
+
+  if (state === "collapsed") {
+    return (
+      <SidebarGroup>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <Popover>
+              <PopoverTrigger asChild>
+                <SidebarMenuButton tooltip="Projects">
+                  <IconFolder />
+                  <span>Projects</span>
+                </SidebarMenuButton>
+              </PopoverTrigger>
+              <PopoverContent side="right" align="start" className="w-64 p-2">
+                <div className="relative mb-2">
+                  <IconSearch className="absolute left-2 top-2 size-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search projects..."
+                    className="h-8 pl-8 py-1 text-sm"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1 max-h-[300px] overflow-auto mb-2">
+                  {filteredProjects.map((project) => {
+                    const search = location.search as { id?: string };
+                    const isActive =
+                      location.pathname === "/app/projects" &&
+                      search.id === project._id;
+                    return (
+                      <Link
+                        key={project._id}
+                        to="/app/projects"
+                        search={{ id: project._id }}
+                        className={cn(
+                          "flex items-center gap-2 p-2 hover:bg-accent text-sm transition-colors",
+                          isActive ? "bg-accent font-medium" : "",
+                        )}
+                      >
+                        <IconFolder
+                          color={project.color}
+                          className="size-4 shrink-0"
+                        />
+                        <span className="truncate">{project.name}</span>
+                      </Link>
+                    );
+                  })}
+                  {filteredProjects.length === 0 && (
+                    <div className="px-2 py-1 text-xs text-muted-foreground">
+                      No projects found.
+                    </div>
+                  )}
+                </div>
+                <Button
+                  className="w-full justify-start text-sm"
+                  onClick={() => setIsCreateOpen(true)}
+                >
+                  <IconPlus className="size-4 mr-2" />
+                  New Project
+                </Button>
+              </PopoverContent>
+            </Popover>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <CreateProjectDialog
+          open={isCreateOpen}
+          onOpenChange={setIsCreateOpen}
+        />
+      </SidebarGroup>
+    );
+  }
 
   return (
     <SidebarGroup>
