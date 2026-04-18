@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { AppSettings } from "../../lib/buddyConfig";
+import { SMART_BREAK_INTERVALS } from "../../lib/breakSchedulingEngine";
 import { EyeRest } from "./eye-rest";
 import { Stretch } from "./stretch";
 import { Hydration } from "./hydration";
@@ -17,22 +18,6 @@ type Props = {
 };
 
 export function WellbeingSettings({ settings, setSettings }: Props) {
-  const updateInterval = (
-    breakType: keyof AppSettings["breaks"],
-    minutes: number,
-  ) => {
-    setSettings((prev) => ({
-      ...prev,
-      breaks: {
-        ...prev.breaks,
-        [breakType]: {
-          ...prev.breaks[breakType],
-          intervalMinutes: minutes,
-        },
-      },
-    }));
-  };
-
   const toggleEnabled = (
     breakType: keyof AppSettings["breaks"],
     enabled: boolean,
@@ -85,47 +70,43 @@ export function WellbeingSettings({ settings, setSettings }: Props) {
               <EyeRest
                 settings={settings}
                 lastFiredAt={lfa.eye}
-                updateInterval={updateInterval}
                 toggleEnabled={toggleEnabled}
               />
-              <Stretch
-                settings={settings}
-                updateInterval={updateInterval}
-                toggleEnabled={toggleEnabled}
-              />
+              <Stretch settings={settings} toggleEnabled={toggleEnabled} />
 
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <Hydration
                   settings={settings}
                   lastFiredAt={lfa.hydrate}
-                  updateInterval={updateInterval}
                   toggleEnabled={toggleEnabled}
                 />
-                <Posture
-                  settings={settings}
-                  updateInterval={updateInterval}
-                  toggleEnabled={toggleEnabled}
-                />
+                <Posture settings={settings} toggleEnabled={toggleEnabled} />
               </div>
 
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <Mindfulness
                   settings={settings}
-                  updateInterval={updateInterval}
                   toggleEnabled={toggleEnabled}
                 />
-                <WristCare
-                  settings={settings}
-                  updateInterval={updateInterval}
-                  toggleEnabled={toggleEnabled}
-                />
+                <WristCare settings={settings} toggleEnabled={toggleEnabled} />
               </div>
 
-              <FullReset
-                settings={settings}
-                updateInterval={updateInterval}
-                toggleEnabled={toggleEnabled}
-              />
+              <FullReset settings={settings} toggleEnabled={toggleEnabled} />
+
+              <section className="rounded-xl border border-emerald-100/60 bg-card p-5 text-sm">
+                <p className="font-semibold text-foreground">
+                  Smart schedule is active
+                </p>
+                <p className="mt-2 text-muted-foreground">
+                  Lory now auto-spaces breaks on a 90-minute cycle to avoid
+                  back-to-back alerts.
+                </p>
+                <p className="mt-3 text-muted-foreground">
+                  Quick recharge: every {SMART_BREAK_INTERVALS.eye}m | Posture:
+                  every {SMART_BREAK_INTERVALS.posture}m | Deep reset: every{" "}
+                  {SMART_BREAK_INTERVALS.full}m
+                </p>
+              </section>
             </div>
 
             <div className="col-span-12 space-y-8 lg:col-span-4">

@@ -1,37 +1,29 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { Dispatch, SetStateAction } from "react";
 import {
   LogicalPosition,
   LogicalSize,
   currentMonitor,
   type Window as TauriWindow,
 } from "@tauri-apps/api/window";
-import { load as loadStore } from "@tauri-apps/plugin-store";
-import { migrateLegacySettings, type AppSettings } from "../lib/buddyConfig";
-
-type SavedWindowPosition = {
-  x: number;
-  y: number;
-};
+import {
+  readSqliteJson,
+  SQLITE_KEYS,
+  type SavedWindowPosition,
+  writeSqliteJson,
+} from "../lib/sqliteStorage";
 
 type UseWindowPersistenceParams = {
   appWindow: TauriWindow;
-  setSettings: Dispatch<SetStateAction<AppSettings>>;
 };
 
-const STORE_FILE = "Lory.json";
-const STORE_WINDOW_POSITION_KEY = "window.position";
-const STORE_SETTINGS_KEY = "settings.data";
 const WINDOW_MARGIN = 16;
 
 const WINDOW_SIZE = { width: 56, height: 56 };
 
 export const useWindowPersistence = ({
   appWindow,
-  setSettings,
 }: UseWindowPersistenceParams): void => {
   const hasPlacedWindowRef = useRef(false);
-  const storeRef = useRef<Awaited<ReturnType<typeof loadStore>> | null>(null);
 
   const getDefaultBottomLeftPosition = useCallback(async () => {
     const monitor = await currentMonitor();
@@ -54,20 +46,8 @@ export const useWindowPersistence = ({
 
   useEffect(() => {
     const initStoreAndPosition = async () => {
-      const store = await loadStore(STORE_FILE, {
-        defaults: {},
-        autoSave: true,
-      });
-      storeRef.current = store;
-
-      const savedSettings =
-        await store.get<Record<string, unknown>>(STORE_SETTINGS_KEY);
-      if (savedSettings) {
-        setSettings(migrateLegacySettings(savedSettings));
-      }
-
-      const savedPos = await store.get<SavedWindowPosition>(
-        STORE_WINDOW_POSITION_KEY,
+      const savedPos = await readSqliteJson<SavedWindowPosition>(
+        SQLITE_KEYS.windowPosition,
       );
       const initialBottomLeft =
         savedPos ?? (await getDefaultBottomLeftPosition());
@@ -85,11 +65,11 @@ export const useWindowPersistence = ({
     };
 
     void initStoreAndPosition();
-  }, [appWindow, getDefaultBottomLeftPosition, setSettings]);
+  }, [appWindow, getDefaultBottomLeftPosition]);
 
   useEffect(() => {
     const unlistenPromise = appWindow.onMoved(async ({ payload }) => {
-      if (!hasPlacedWindowRef.current || !storeRef.current) {
+      if (!hasPlacedWindowRef.current) {
         return;
       }
 
@@ -97,7 +77,7 @@ export const useWindowPersistence = ({
       const logicalPos = payload.toLogical(scaleFactor);
       const logicalSize = (await appWindow.innerSize()).toLogical(scaleFactor);
 
-      await storeRef.current.set(STORE_WINDOW_POSITION_KEY, {
+      await writeSqliteJson(SQLITE_KEYS.windowPosition, {
         x: logicalPos.x,
         y: logicalPos.y + logicalSize.height,
       });

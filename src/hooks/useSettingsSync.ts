@@ -1,32 +1,67 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import type { AppSettings } from "../lib/buddyConfig";
-import { APP_STORAGE_KEY } from "../lib/settingsStorage";
+import { SQLITE_KEYS, writeSqliteJson } from "../lib/sqliteStorage";
+
+export const SETTINGS_EVENT = "buddy-settings-updated";
+
+export type SettingsSyncPayload = {
+  settings: AppSettings;
+  origin: "main" | "settings";
+};
 
 type UseSettingsSyncParams = {
   settings: AppSettings;
   setSettings: Dispatch<SetStateAction<AppSettings>>;
+  origin: "main" | "settings";
+  isReady: boolean;
 };
 
 export const useSettingsSync = ({
   settings,
   setSettings,
+  origin,
+  isReady,
 }: UseSettingsSyncParams): void => {
-  useEffect(() => {
-    window.localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(settings));
-  }, [settings]);
+  const skipPersistRef = useRef(false);
 
   useEffect(() => {
-    const unlistenPromise = listen<AppSettings>(
-      "buddy-settings-updated",
+    if (!isReady) {
+      return;
+    }
+
+    if (skipPersistRef.current) {
+      skipPersistRef.current = false;
+      return;
+    }
+
+    const syncSettings = async () => {
+      await writeSqliteJson(SQLITE_KEYS.settings, settings);
+      await emit(SETTINGS_EVENT, {
+        settings,
+        origin,
+      } satisfies SettingsSyncPayload);
+    };
+
+    void syncSettings();
+  }, [isReady, origin, settings]);
+
+  useEffect(() => {
+    const unlistenPromise = listen<SettingsSyncPayload>(
+      SETTINGS_EVENT,
       (event) => {
-        setSettings((prev) => ({ ...prev, ...event.payload }));
+        if (event.payload.origin === origin) {
+          return;
+        }
+
+        skipPersistRef.current = true;
+        setSettings(event.payload.settings);
       },
     );
 
     return () => {
       void unlistenPromise.then((unlisten) => unlisten());
     };
-  }, [setSettings]);
+  }, [origin, setSettings]);
 };

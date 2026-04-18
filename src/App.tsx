@@ -11,7 +11,11 @@ import {
   type BreakType,
   type PendingAction,
 } from "./lib/buddyConfig";
-import { readInitialSettings } from "./lib/settingsStorage";
+import { applySmartBreakIntervals } from "./lib/breakSchedulingEngine";
+import {
+  readInitialSettings,
+  readPersistedSettings,
+} from "./lib/settingsStorage";
 import { useSettingsSync } from "./hooks/useSettingsSync";
 import { useWindowPersistence } from "./hooks/useWindowPersistence";
 import { useBreakReminderScheduler } from "./hooks/useBreakReminderScheduler";
@@ -54,6 +58,7 @@ function App() {
   } | null>(null);
 
   const [settings, setSettings] = useState<AppSettings>(readInitialSettings);
+  const [settingsHydrated, setSettingsHydrated] = useState(false);
   const [breakStates, setBreakStates] = useState<Record<BreakType, BreakState>>(
     () => ({
       eye: {
@@ -177,9 +182,33 @@ function App() {
     return "concerned";
   }, [isPaused, isSuppressed, pendingActions, pendingCount]);
 
-  useSettingsSync({ settings, setSettings });
-  useWindowPersistence({ appWindow, setSettings });
+  useSettingsSync({
+    settings,
+    setSettings,
+    origin: "main",
+    isReady: settingsHydrated,
+  });
+  useWindowPersistence({ appWindow });
   useAutomaticWorkLog({ settings, setSettings });
+
+  useEffect(() => {
+    const hydrateSettings = async () => {
+      const persisted = await readPersistedSettings();
+      if (persisted) {
+        setSettings(persisted);
+      }
+      setSettingsHydrated(true);
+    };
+
+    void hydrateSettings();
+  }, []);
+
+  useEffect(() => {
+    setSettings((prev) => ({
+      ...prev,
+      breaks: applySmartBreakIntervals(prev.breaks),
+    }));
+  }, []);
 
   // Request notification permissions on app load
   useEffect(() => {
@@ -192,18 +221,19 @@ function App() {
     setSettings,
     isPaused,
     isSuppressed,
-    onBreakTriggered: (breakType) => {
-      const meta = BREAK_META[breakType];
-
-      upsertPendingAction({
-        dedupeKey: `break:${breakType}`,
-        source: "break",
-        title: meta.label,
-        description: meta.action,
-        severity: meta.priority === 3 ? 3 : meta.priority === 2 ? 2 : 1,
-        targetSection: "reminders",
-        targetId: breakType,
-      });
+    onBreakTriggered: (breakTypes) => {
+      for (const breakType of breakTypes) {
+        const meta = BREAK_META[breakType];
+        upsertPendingAction({
+          dedupeKey: `break:${breakType}`,
+          source: "break",
+          title: meta.label,
+          description: meta.action,
+          severity: meta.priority === 3 ? 3 : meta.priority === 2 ? 2 : 1,
+          targetSection: "reminders",
+          targetId: breakType,
+        });
+      }
     },
   });
   useWorkReminderScheduler({
