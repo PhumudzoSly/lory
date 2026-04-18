@@ -8,7 +8,7 @@ type BuddyCharacterProps = {
   name: string;
   pendingCount?: number;
   onClick: () => void;
-  onContextMenu: (event: ReactPointerEvent<HTMLButtonElement>) => void;
+  onContextMenu?: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   onPointerMove: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   onPointerUp: () => void;
@@ -16,14 +16,14 @@ type BuddyCharacterProps = {
 
 // Map skins directly to hex values so they can be injected as custom CSS variables
 const skinColors: Record<BuddySkin, { start: string; end: string }> = {
-  sunny: { start: "#fde68a", end: "#fdba74" }, // amber-200 to orange-300
-  mint: { start: "#d1fae5", end: "#6ee7b7" }, // emerald-100 to emerald-300
-  sky: { start: "#e0f2fe", end: "#93c5fd" }, // sky-100 to blue-300
-  rose: { start: "#ffe4e6", end: "#fda4af" }, // pink-100 to rose-300
-  lavender: { start: "#f3e8ff", end: "#d8b4fe" }, // purple-100 to purple-300
-  peach: { start: "#ffedd5", end: "#fecaca" }, // orange-100 to red-200
-  slate: { start: "#e2e8f0", end: "#94a3b8" }, // slate-200 to slate-400
-  charcoal: { start: "#3f3f46", end: "#18181b" }, // zinc-700 to zinc-900
+  sunny: { start: "#fde68a", end: "#fdba74" },
+  mint: { start: "#d1fae5", end: "#6ee7b7" },
+  sky: { start: "#e0f2fe", end: "#93c5fd" },
+  rose: { start: "#ffe4e6", end: "#fda4af" },
+  lavender: { start: "#f3e8ff", end: "#d8b4fe" },
+  peach: { start: "#ffedd5", end: "#fecaca" },
+  slate: { start: "#e2e8f0", end: "#94a3b8" },
+  charcoal: { start: "#3f3f46", end: "#18181b" },
 };
 
 export function BuddyCharacter({

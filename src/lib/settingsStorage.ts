@@ -3,15 +3,10 @@ import {
   migrateLegacySettings,
   type AppSettings,
 } from "./buddyConfig";
-import { applySmartBreakIntervals } from "./breakSchedulingEngine";
 import { readSqliteJson, SQLITE_KEYS } from "./sqliteStorage";
 
 export const readInitialSettings = (): AppSettings => {
-  const defaults = buildDefaultSettings();
-  return {
-    ...defaults,
-    breaks: applySmartBreakIntervals(defaults.breaks),
-  };
+  return buildDefaultSettings();
 };
 
 export const readPersistedSettings = async (): Promise<AppSettings | null> => {
@@ -23,11 +18,7 @@ export const readPersistedSettings = async (): Promise<AppSettings | null> => {
   }
 
   try {
-    const migrated = migrateLegacySettings(raw);
-    return {
-      ...migrated,
-      breaks: applySmartBreakIntervals(migrated.breaks),
-    };
+    return migrateLegacySettings(raw);
   } catch {
     return null;
   }

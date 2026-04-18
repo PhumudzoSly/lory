@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
 import { type AppSettings, type BuddySkin } from "./lib/buddyConfig";
 import {
   readInitialSettings,
@@ -13,8 +12,7 @@ export default function SettingsApp() {
   const [settings, setSettings] = useState<AppSettings>(readInitialSettings);
   const [settingsHydrated, setSettingsHydrated] = useState(false);
   const [requestedSection, setRequestedSection] =
-    useState<SidebarSection>("work");
-  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+    useState<SidebarSection>("customization");
 
   useSettingsSync({
     settings,
@@ -24,23 +22,12 @@ export default function SettingsApp() {
   });
 
   useEffect(() => {
-    const search = new URLSearchParams(window.location.search);
+    const search = new URLSearchParams(globalThis.location.search);
     const section = search.get("section");
-    const pendingId = search.get("pendingActionId");
-    const allowed: SidebarSection[] = [
-      "work",
-      "wellbeing",
-      "customization",
-      "reminders",
-      "about",
-    ];
+    const allowed: SidebarSection[] = ["customization"];
 
     if (section && allowed.includes(section as SidebarSection)) {
       setRequestedSection(section as SidebarSection);
-    }
-
-    if (pendingId) {
-      setPendingActionId(pendingId);
     }
   }, []);
 
@@ -54,24 +41,6 @@ export default function SettingsApp() {
     };
 
     void hydrateSettings();
-  }, []);
-
-  useEffect(() => {
-    const unlistenTargetPromise = listen<{
-      section?: SidebarSection;
-      pendingActionId?: string;
-    }>("buddy-open-target", (event) => {
-      if (event.payload.section) {
-        setRequestedSection(event.payload.section);
-      }
-      if (event.payload.pendingActionId) {
-        setPendingActionId(event.payload.pendingActionId);
-      }
-    });
-
-    return () => {
-      void unlistenTargetPromise.then((unlisten) => unlisten());
-    };
   }, []);
 
   const skinSwatchClass: Record<BuddySkin, string> = {
@@ -91,8 +60,6 @@ export default function SettingsApp() {
       setSettings={setSettings}
       skinSwatchClass={skinSwatchClass}
       requestedSection={requestedSection}
-      highlightedPendingActionId={pendingActionId}
-      onPendingActionHandled={() => setPendingActionId(null)}
     />
   );
 }

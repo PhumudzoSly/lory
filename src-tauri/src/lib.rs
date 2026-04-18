@@ -83,9 +83,6 @@ pub fn run() {
             app.manage(DbState { db_path });
             Ok(())
         })
-        .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             sqlite_get,
             sqlite_set,
