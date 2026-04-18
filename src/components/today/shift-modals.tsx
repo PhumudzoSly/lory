@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  IconHourglassHigh,
   IconBriefcase,
   IconPalette,
   IconBrain,
@@ -47,6 +46,8 @@ export const ShiftModals = ({
   const [endTime, setEndTime] = useState("17:00");
   const [breaks, setBreaks] = useState(true);
   const [workType, setWorkType] = useState("normal");
+
+  const hasInvalidTimeRange = startTime >= endTime;
 
   const handleStart = () => {
     onStartShift({ startTime, endTime, breaks, workType });
@@ -100,6 +101,12 @@ export const ShiftModals = ({
                 />
               </div>
             </div>
+
+            {hasInvalidTimeRange ? (
+              <p className="text-xs font-medium text-red-500/80">
+                End time must be after start time.
+              </p>
+            ) : null}
 
             {/* Work Type Selection */}
             <div className="space-y-3">
@@ -209,6 +216,7 @@ export const ShiftModals = ({
           <DialogFooter className="border-t border-border/10 pt-4 sm:justify-start">
             <Button
               onClick={handleStart}
+              disabled={hasInvalidTimeRange}
               className="text-xs h-8 px-4 bg-foreground/90 text-background hover:bg-foreground transition-colors font-medium"
             >
               Start Shift

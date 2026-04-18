@@ -1,48 +1,27 @@
 import Work from "@/components/today/work";
 import AiNudge from "@/components/today/ai-nudge";
-import { TaskList, Task } from "@/components/tasks/task-list";
+import { TaskList } from "@/components/tasks/task-list";
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+
+const TodayContent = () => {
+  const tasks = useQuery(api.tasks.list, {}) || [];
+  const pendingTasks = tasks.filter((t) => t.status !== "done");
+
+  return (
+    <div className="space-y-16 mx-auto max-w-6xl px-4">
+      <Work />
+      <AiNudge />
+      <TaskList
+        tasks={pendingTasks}
+        title="Today's Tasks"
+        description="Focus on high-priority items first. Don't forget to take breaks."
+      />
+    </div>
+  );
+};
 
 export const Route = createFileRoute("/app/today")({
-  component: () => {
-    const tasks: Task[] = [
-      {
-        id: "1",
-        title: "Review pull requests",
-        description: "Check the new auth flow PRs and leave comments.",
-        completed: false,
-        project: "Frontend",
-        time: "10:00 AM",
-      },
-      {
-        id: "2",
-        title: "Design meeting",
-        description:
-          "Sync with the design team on the new dark mode aesthetics.",
-        completed: true,
-        project: "Core UI",
-        time: "11:30 AM",
-      },
-      {
-        id: "3",
-        title: "Update documentation",
-        description: "Reflect the latest API changes in the Notion docs.",
-        completed: false,
-        project: "Docs",
-        time: "1:00 PM",
-      },
-    ];
-
-    return (
-      <div className="space-y-16 mx-auto max-w-6xl px-4">
-        <Work />
-        <AiNudge />
-        <TaskList
-          tasks={tasks}
-          title="Today's Tasks"
-          description="Focus on high-priority items first. Don't forget to take breaks."
-        />
-      </div>
-    );
-  },
+  component: TodayContent,
 });

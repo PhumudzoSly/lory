@@ -7,12 +7,20 @@ import {
 
 interface OffDayProps {
   onStartWorking: () => void;
+  hasSavedSchedule: boolean;
+  scheduledStartTime?: string;
+  scheduledEndTime?: string;
 }
 
 /**
  * OffDay component - Subtle, typography-driven UI for when the user is not working.
  */
-export const OffDay = ({ onStartWorking }: OffDayProps) => {
+export const OffDay = ({
+  onStartWorking,
+  hasSavedSchedule,
+  scheduledStartTime,
+  scheduledEndTime,
+}: OffDayProps) => {
   const today = new Date();
   const dateString = today.toLocaleDateString("en-US", {
     weekday: "long",
@@ -64,9 +72,15 @@ export const OffDay = ({ onStartWorking }: OffDayProps) => {
             Day Off
           </h1>
           <p className="max-w-2xl text-[13px] font-normal leading-relaxed text-muted-foreground/60">
-            You're not scheduled to work today. Take some time to rest,
-            recharge, and focus on yourself.
+            {hasSavedSchedule
+              ? "Your saved schedule marks today as an off day. Take some time to rest, recharge, and focus on yourself."
+              : "No saved schedule was found yet, so today is treated as an off day. Take some time to rest and recharge."}
           </p>
+          {scheduledStartTime && scheduledEndTime ? (
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/45">
+              Planned shift window: {scheduledStartTime} - {scheduledEndTime}
+            </p>
+          ) : null}
         </div>
       </header>
 

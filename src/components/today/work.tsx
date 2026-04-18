@@ -1,13 +1,81 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useMutation, useQuery } from "convex/react";
 import {
   IconClock,
   IconCoffee,
   IconHourglassHigh,
   IconCalendar,
 } from "@tabler/icons-react";
+import { api } from "../../../convex/_generated/api";
 import OffDay from "./off-day";
 import { ShiftModals } from "./shift-modals";
 import ShiftStart from "./shift-start";
+
+const DAY_KEYS = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+] as const;
+
+type WorkMode = "Deep" | "Creative" | "Normal";
+
+const toMinutes = (time: string): number | null => {
+  const [h, m] = time.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) {
+    return null;
+  }
+  return h * 60 + m;
+};
+
+const minutesUntilTime = (targetTime: string): number | null => {
+  const [h, m] = targetTime.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) {
+    return null;
+  }
+
+  const now = new Date();
+  const target = new Date();
+  target.setHours(h, m, 0, 0);
+
+  return Math.floor((target.getTime() - now.getTime()) / (1000 * 60));
+};
+
+const formatDuration = (minutes: number): string => {
+  if (minutes <= 0) {
+    return "0h 0m";
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours}h ${mins}m`;
+};
+
+const toDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const toTimeKey = (date: Date): string => {
+  const hours = `${date.getHours()}`.padStart(2, "0");
+  const minutes = `${date.getMinutes()}`.padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
+
+const mapWorkTypeToMode = (workType: string): WorkMode => {
+  if (workType === "deep") {
+    return "Deep";
+  }
+  if (workType === "creative") {
+    return "Creative";
+  }
+  return "Normal";
+};
 
 /**
  * Work component - Notion inspired summary of today's progress.
@@ -15,58 +83,204 @@ import ShiftStart from "./shift-start";
  */
 const Work = () => {
   const today = new Date();
+  const todayDateKey = toDateKey(today);
+  const dayKey = DAY_KEYS[today.getDay()];
+  const isWeekend = today.getDay() === 0 || today.getDay() === 6;
   const dateString = today.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
 
-  const isWeekend = today.getDay() === 0 || today.getDay() === 6;
-  const [isOffDay, setIsOffDay] = useState(isWeekend);
+  const schedule = useQuery(api.work.getWorkSchedule);
+  const todayWorked = useQuery(api.work.getDayWorked, {
+    date: todayDateKey,
+  });
+  const upsertDayWorked = useMutation(api.work.upsertDayWorked);
+  const endDayWorked = useMutation(api.work.endDayWorked);
+  const deleteDayWorked = useMutation(api.work.deleteDayWorked);
+  const reconcileSessionsOnAppOpen = useMutation(
+    api.work.reconcileSessionsOnAppOpen,
+  );
+  const hasSavedSchedule = Array.isArray(schedule) && schedule.length > 0;
+  const todaySchedule = useMemo(
+    () => schedule?.find((entry) => entry.dayOfWeek === dayKey),
+    [dayKey, schedule],
+  );
+
+  const [manualWorkOverride, setManualWorkOverride] = useState(false);
+  const [manualDayOffOverride, setManualDayOffOverride] = useState(false);
   const [shiftState, setShiftState] = useState<"not-started" | "in-progress">(
     "not-started",
   );
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
+  const [activeShift, setActiveShift] = useState<{
+    startTime: string;
+    endTime: string;
+    workType: string;
+  } | null>(null);
 
-  const [remainingTime, setRemainingTime] = useState("0h 0m");
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const [isPersistingShift, setIsPersistingShift] = useState(false);
+  const [isTakingDayOff, setIsTakingDayOff] = useState(false);
+  const [didReconcileOnOpen, setDidReconcileOnOpen] = useState(false);
+
+  const isScheduledWorkDay = todaySchedule?.isWorkDay ?? !isWeekend;
+  const scheduledEndTime = activeShift?.endTime ?? todaySchedule?.endTime;
+  const hasOpenTodaySession = Boolean(
+    todayWorked && !todayWorked.sessionEndedAt,
+  );
+  const isOffDay =
+    manualDayOffOverride ||
+    (!manualWorkOverride && !isScheduledWorkDay && !hasOpenTodaySession);
+
+  const sessionMetrics = useMemo(() => {
+    if (!activeShift) {
+      return {
+        workedMinutes: 0,
+        plannedMinutes: 0,
+        remainingMinutes: 0,
+      };
+    }
+
+    const start = toMinutes(activeShift.startTime);
+    const end = toMinutes(activeShift.endTime);
+    if (start === null || end === null || end <= start) {
+      return {
+        workedMinutes: 0,
+        plannedMinutes: 0,
+        remainingMinutes: 0,
+      };
+    }
+
+    const now = new Date(nowTick);
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const workedMinutes = Math.min(
+      Math.max(nowMinutes - start, 0),
+      end - start,
+    );
+    const remainingMinutes = Math.max(end - nowMinutes, 0);
+
+    return {
+      workedMinutes,
+      plannedMinutes: end - start,
+      remainingMinutes,
+    };
+  }, [activeShift, nowTick]);
+
+  const workedTime = formatDuration(sessionMetrics.workedMinutes);
+  const remainingTime = formatDuration(sessionMetrics.remainingMinutes);
 
   useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const endOfDay = new Date();
-      endOfDay.setHours(17, 0, 0, 0); // 5 PM today
+    if (didReconcileOnOpen) {
+      return;
+    }
 
-      const diff = endOfDay.getTime() - now.getTime();
+    setDidReconcileOnOpen(true);
+    void reconcileSessionsOnAppOpen({
+      currentDate: todayDateKey,
+      currentTime: toTimeKey(new Date()),
+    }).catch((error) => {
+      console.error("Failed to reconcile sessions on open", error);
+    });
+  }, [didReconcileOnOpen, reconcileSessionsOnAppOpen, todayDateKey]);
 
-      if (diff <= 0) {
-        setRemainingTime("0h 0m");
-        return;
-      }
+  useEffect(() => {
+    if (todayWorked === undefined) {
+      return;
+    }
 
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      setRemainingTime(`${hours}h ${minutes}m`);
-    };
+    if (!todayWorked) {
+      setActiveShift(null);
+      setShiftState("not-started");
+      return;
+    }
 
-    updateTime();
-    const interval = setInterval(updateTime, 60000); // update every minute
+    if (todayWorked.sessionEndedAt) {
+      setActiveShift(null);
+      setShiftState("not-started");
+      return;
+    }
+
+    setActiveShift({
+      startTime: todayWorked.startTime,
+      endTime: todayWorked.endTime,
+      workType: todayWorked.workMode.toLowerCase(),
+    });
+    setShiftState("in-progress");
+  }, [todayWorked]);
+
+  const endShiftAndPersist = async (endTime: string) => {
+    if (!activeShift) {
+      setShiftState("not-started");
+      return;
+    }
+
+    setIsPersistingShift(true);
+    try {
+      await endDayWorked({
+        date: todayDateKey,
+        endTime,
+      });
+    } catch (error) {
+      console.error("Failed to save end of shift", error);
+    } finally {
+      setShiftState("not-started");
+      setActiveShift(null);
+      setIsPersistingShift(false);
+    }
+  };
+
+  const takeDayOffAndClearSession = async () => {
+    setIsTakingDayOff(true);
+    try {
+      await deleteDayWorked({ date: todayDateKey });
+    } catch (error) {
+      console.error("Failed to clear today's session", error);
+    } finally {
+      setManualWorkOverride(false);
+      setManualDayOffOverride(true);
+      setShiftState("not-started");
+      setActiveShift(null);
+      setIsShiftModalOpen(false);
+      setIsTakingDayOff(false);
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNowTick(Date.now());
+    }, 60000); // update every minute
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!scheduledEndTime || shiftState !== "in-progress") {
+      return;
+    }
+
+    const remainingMinutes = minutesUntilTime(scheduledEndTime);
+    if (remainingMinutes !== null && remainingMinutes <= 0) {
+      void endShiftAndPersist(toTimeKey(new Date()));
+    }
+  }, [nowTick, scheduledEndTime, shiftState]);
 
   const stats = [
     {
       label: "Worked",
-      value: "5.5h",
+      value: workedTime,
       icon: IconClock,
       color: "text-blue-500",
-      description: "2.5h to go",
+      description: `Of ${formatDuration(sessionMetrics.plannedMinutes)} planned`,
     },
     {
       label: "Remaining",
       value: remainingTime,
       icon: IconHourglassHigh,
       color: "text-orange-500",
-      description: "Ends at 5 PM",
+      description: scheduledEndTime
+        ? `Ends at ${scheduledEndTime}`
+        : "No end time set",
     },
     {
       label: "Next Break",
@@ -77,8 +291,28 @@ const Work = () => {
     },
   ];
 
+  if (schedule === undefined || todayWorked === undefined) {
+    return (
+      <div className="flex min-h-svh w-full items-center justify-center">
+        <span className="text-[13px] text-muted-foreground/50">
+          Preparing...
+        </span>
+      </div>
+    );
+  }
+
   if (isOffDay) {
-    return <OffDay onStartWorking={() => setIsOffDay(false)} />;
+    return (
+      <OffDay
+        onStartWorking={() => {
+          setManualDayOffOverride(false);
+          setManualWorkOverride(true);
+        }}
+        hasSavedSchedule={hasSavedSchedule}
+        scheduledStartTime={todaySchedule?.startTime}
+        scheduledEndTime={todaySchedule?.endTime}
+      />
+    );
   }
 
   if (shiftState === "not-started") {
@@ -86,7 +320,9 @@ const Work = () => {
       <>
         <ShiftStart
           dateString={dateString}
-          onTakeDayOff={() => setIsOffDay(true)}
+          onTakeDayOff={() => {
+            void takeDayOffAndClearSession();
+          }}
           onStartShiftClick={() => setIsShiftModalOpen(true)}
         />
         <ShiftModals
@@ -94,8 +330,30 @@ const Work = () => {
           isOpen={isShiftModalOpen}
           onOpenChange={setIsShiftModalOpen}
           onStartShift={(data) => {
-            console.log("Shift started with:", data);
-            setShiftState("in-progress");
+            void (async () => {
+              setIsPersistingShift(true);
+              try {
+                const startTimeForSave = todayWorked?.startTime ?? data.startTime;
+                await upsertDayWorked({
+                  date: todayDateKey,
+                  startTime: startTimeForSave,
+                  endTime: data.endTime,
+                  workMode: mapWorkTypeToMode(data.workType),
+                });
+
+                setActiveShift({
+                  startTime: startTimeForSave,
+                  endTime: data.endTime,
+                  workType: data.workType,
+                });
+                setManualDayOffOverride(false);
+                setShiftState("in-progress");
+              } catch (error) {
+                console.error("Failed to save start of shift", error);
+              } finally {
+                setIsPersistingShift(false);
+              }
+            })();
           }}
           onEndShift={() => {}}
         />
@@ -124,10 +382,13 @@ const Work = () => {
               Today
             </h1>
             <button
-              onClick={() => setIsOffDay(true)}
+              onClick={() => {
+                void takeDayOffAndClearSession();
+              }}
+              disabled={isTakingDayOff}
               className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/40 hover:text-foreground/70 transition-colors"
             >
-              Take the day off
+              {isTakingDayOff ? "Taking day off..." : "Take the day off"}
             </button>
           </div>
           <p className="max-w-2xl text-[13px] font-normal leading-relaxed text-muted-foreground/60">
@@ -194,7 +455,12 @@ const Work = () => {
         isOpen={isShiftModalOpen}
         onOpenChange={setIsShiftModalOpen}
         onStartShift={() => {}}
-        onEndShift={() => setShiftState("not-started")}
+        onEndShift={() => {
+          if (isPersistingShift) {
+            return;
+          }
+          void endShiftAndPersist(toTimeKey(new Date()));
+        }}
       />
     </div>
   );
