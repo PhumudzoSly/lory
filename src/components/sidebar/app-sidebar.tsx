@@ -55,12 +55,7 @@ type NavItem = {
 const topNav = [
   { title: "Today", value: "today", icon: IconCalendarEvent },
   { title: "Wellbeing", value: "wellbeing", icon: IconHeart },
-] as const satisfies readonly NavItem[];
-
-const workGroup = [
   { title: "Tasks", value: "tasks", icon: IconCheckbox },
-  { title: "Notes", value: "notes", icon: IconFileText },
-  { title: "Goals", value: "goals", icon: IconTarget },
 ] as const satisfies readonly NavItem[];
 
 function NavMenuItem({ item, isActive }: { item: NavItem; isActive: boolean }) {
@@ -136,21 +131,6 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               {topNav.map((item) => (
-                <NavMenuItem
-                  key={item.value}
-                  item={item}
-                  isActive={isItemActive(item.value)}
-                />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Work</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {workGroup.map((item) => (
                 <NavMenuItem
                   key={item.value}
                   item={item}

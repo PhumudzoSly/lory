@@ -25,6 +25,7 @@ import { formatDistanceToNow, isToday } from "date-fns";
 import { StatusSwitcher, type TaskStatus } from "./status-switcher";
 import { DateSwitcher } from "./date-switcher";
 import { InlineTextarea } from "./inline-textarea";
+import { ProjectSelector } from "./project-selector";
 
 export type Task = Doc<"tasks">;
 
@@ -167,7 +168,7 @@ export const TaskList = ({ tasks, title, description }: TaskListProps) => {
                 </h2>
               </SheetHeader>
 
-              <div className="px-8 py-4">
+              <div className="flex-1 px-8 py-4">
                 <div className="flex flex-col gap-4 py-4 mb-4 border-b border-border/40">
                   <div className="grid grid-cols-[120px_1fr] items-center gap-4">
                     <div className="flex items-center gap-2 text-[12px] font-medium text-muted-foreground/60">
@@ -215,11 +216,17 @@ export const TaskList = ({ tasks, title, description }: TaskListProps) => {
                       <IconFolder size={16} stroke={2} className="opacity-70" />
                       Project
                     </div>
-                    <div className="text-[13px] font-medium text-foreground/70 px-1 -mx-1">
-                      {selectedTask.projectId
-                        ? projectNameById.get(selectedTask.projectId) ||
-                          "Project"
-                        : "Inbox"}
+                    <div className="text-[13px] font-medium text-foreground/70">
+                      <ProjectSelector
+                        projectId={selectedTask.projectId}
+                        onProjectChange={(projectId) => {
+                          void updateTask({
+                            taskId: selectedTask._id,
+                            projectId,
+                          });
+                          setSelectedTask({ ...selectedTask, projectId });
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -239,53 +246,54 @@ export const TaskList = ({ tasks, title, description }: TaskListProps) => {
                       className="min-h-50"
                     />
                   </div>
-
-                  <div className="pt-2 border-t border-border/40 flex justify-end">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="gap-1.5"
-                        >
-                          <IconTrash size={14} />
-                          Delete Task
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent size="sm">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete task?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently remove this task.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel size="sm">
-                            Cancel
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            variant="destructive"
-                            size="sm"
-                            disabled={isDeleting}
-                            onClick={() => {
-                              if (!selectedTask) return;
-                              setIsDeleting(true);
-                              void removeTask({ taskId: selectedTask._id })
-                                .then(() => {
-                                  setSelectedTask(null);
-                                })
-                                .finally(() => {
-                                  setIsDeleting(false);
-                                });
-                            }}
-                          >
-                            {isDeleting ? "Deleting..." : "Delete"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
                 </div>
+              </div>
+
+              <div className="border-t border-border/40 px-8 py-4 flex items-center justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedTask(null)}
+                >
+                  Cancel
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" className="gap-1.5">
+                      <IconTrash size={14} />
+                      Delete Task
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent size="sm">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete task?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove this task.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel size="sm">Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        size="sm"
+                        disabled={isDeleting}
+                        onClick={() => {
+                          if (!selectedTask) return;
+                          setIsDeleting(true);
+                          void removeTask({ taskId: selectedTask._id })
+                            .then(() => {
+                              setSelectedTask(null);
+                            })
+                            .finally(() => {
+                              setIsDeleting(false);
+                            });
+                        }}
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           )}

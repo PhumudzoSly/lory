@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { IconChecklist, IconPlus } from "@tabler/icons-react";
 import { api } from "../../../convex/_generated/api";
-import { TaskList } from "./task-list";
-import { CreateTaskDialog } from "./create-task-dialog";
-import { FilterTasksPopover } from "./filter-tasks-popover";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { FilterTasksPopover } from "../tasks/filter-tasks-popover";
+import { CreateTaskDialog } from "../tasks/create-task-dialog";
+import { TaskList } from "../tasks/task-list";
 
 const sortTasks = (tasks: Doc<"tasks">[]) => {
   return [...tasks].sort((a, b) => {
@@ -25,9 +25,9 @@ type TasksPageProps = {
   lockProjectSelection?: boolean;
 };
 
-export const TasksPage = ({
+export const ProjectTasks = ({
   projectId,
-  lockProjectSelection = false,
+  lockProjectSelection = true,
 }: TasksPageProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [quickTitle, setQuickTitle] = useState("");
@@ -69,17 +69,6 @@ export const TasksPage = ({
     <div className="mx-auto space-y-10 py-6 px-4">
       {/* Header: Minimal, tracking-widest, subtle hover */}
       <header className="space-y-6">
-        <div className="flex w-fit items-center gap-2 border-b border-transparent pb-0.5 text-muted-foreground/30 transition-colors group hover:border-border/40 cursor-default">
-          <IconChecklist
-            size={11}
-            stroke={2.5}
-            className="transition-colors group-hover:text-foreground/50"
-          />
-          <span className="text-[12px] font-bold uppercase tracking-[0.3em] transition-colors group-hover:text-foreground/50">
-            {todayDateString}
-          </span>
-        </div>
-
         <div className="flex items-start justify-between">
           <div className="space-y-3">
             <h1 className="text-2xl font-bold tracking-tight text-foreground/80">
@@ -97,7 +86,7 @@ export const TasksPage = ({
             />
             <CreateTaskDialog
               defaultProjectId={projectId}
-              lockProjectSelection={lockProjectSelection}
+              lockProjectSelection={true}
             />
           </div>
         </div>

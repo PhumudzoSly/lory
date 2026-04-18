@@ -4,6 +4,7 @@ import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { Id } from "../../convex/_generated/dataModel";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProjectTasks } from "@/components/projects/tasks";
 
 export const Route = createFileRoute("/app/projects")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -27,7 +28,7 @@ function RouteComponent() {
         </TabsList>
         <Separator className="mb-4" />
         <TabsContent value="tasks">
-          <TasksPage projectId={id} lockProjectSelection />
+          <ProjectTasks projectId={id} />
         </TabsContent>
         <TabsContent value="account">
           Make changes to your account here.
