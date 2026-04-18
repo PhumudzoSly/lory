@@ -1,5 +1,3 @@
-import { Label } from "../ui/label";
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Input } from "../ui/input";
 import { useTheme } from "../theme-provider";
 import { IconDeviceDesktop, IconSun, IconMoon } from "@tabler/icons-react";
@@ -12,6 +10,26 @@ type CustomizationSettingsProps = Readonly<{
   skinSwatchClass: Record<BuddySkin, string>;
 }>;
 
+type Theme = "light" | "dark" | "system";
+
+const THEMES: ReadonlyArray<{ id: Theme; label: string; Icon: typeof IconSun }> = [
+  { id: "light", label: "Light", Icon: IconSun },
+  { id: "dark", label: "Dark", Icon: IconMoon },
+  { id: "system", label: "Auto", Icon: IconDeviceDesktop },
+];
+
+function Row({
+  label,
+  children,
+}: Readonly<{ label: string; children: React.ReactNode }>) {
+  return (
+    <div className="flex items-center justify-between gap-8 py-5">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      {children}
+    </div>
+  );
+}
+
 export function CustomizationSettings({
   settings,
   setSettings,
@@ -20,160 +38,65 @@ export function CustomizationSettings({
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="space-y-0">
-      <header className="mb-12 max-w-4xl">
-        <h2 className="text-4xl font-bold tracking-tight text-foreground mb-3">
-          Customization
-        </h2>
-        <p className="text-lg text-muted-foreground">
-          Personalize your Lory buddy and app appearance.
-        </p>
-      </header>
+    <div className="max-w-2xl">
+      <h2 className="text-2xl font-semibold tracking-tight mb-8">Customization</h2>
 
-      <div className="flex flex-col space-y-0 divide-y divide-border/40 max-w-4xl">
-        {/* Buddy Identity */}
-        <section className="py-8 flex flex-col md:flex-row md:items-start gap-8">
-          <div className="md:w-1/3 shrink-0">
-            <h3 className="text-lg font-bold text-foreground mb-1">
-              Buddy Identity
-            </h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Give your buddy a unique name.
-            </p>
-          </div>
+      <div className="divide-y divide-border/40">
+        <Row label="Name">
+          <Input
+            type="text"
+            value={settings.buddyName}
+            maxLength={24}
+            onChange={(event) =>
+              setSettings((prev) => ({
+                ...prev,
+                buddyName: event.target.value.trimStart().slice(0, 24) || "Lory",
+              }))
+            }
+            className="h-8 w-48 border-0 bg-transparent text-right focus-visible:ring-0 focus-visible:bg-muted/50"
+          />
+        </Row>
 
-          <div className="md:w-2/3 space-y-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="buddy-name"
-                className="text-sm font-medium text-muted-foreground"
-              >
-                Buddy Name
-              </Label>
-              <Input
-                id="buddy-name"
-                className="max-w-md bg-background focus-visible:ring-primary h-10"
-                type="text"
-                value={settings.buddyName}
-                maxLength={24}
-                onChange={(event) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    buddyName:
-                      event.target.value.trimStart().slice(0, 24) || "Lory",
-                  }))
-                }
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Buddy Look */}
-        <section className="py-8 flex flex-col md:flex-row md:items-start gap-8">
-          <div className="md:w-1/3 shrink-0">
-            <h3 className="text-lg font-bold text-foreground mb-1">
-              Buddy Look
-            </h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Choose a color palette for your buddy.
-            </p>
-          </div>
-
-          <div className="md:w-2/3">
-            <RadioGroup
-              value={settings.buddySkin}
-              onValueChange={(value) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  buddySkin: value as BuddySkin,
-                }))
-              }
-              className="grid grid-cols-2 sm:grid-cols-4 gap-4"
-            >
-              {BUDDY_SKINS.map((skin) => (
-                <Label
+        <Row label="Skin">
+          <div className="flex gap-2">
+            {BUDDY_SKINS.map((skin) => {
+              const selected = settings.buddySkin === skin.id;
+              return (
+                <button
                   key={skin.id}
-                  htmlFor={`skin-${skin.id}`}
-                  className="flex flex-col items-center justify-between rounded-md border border-border/40 bg-card/50 p-4 hover:bg-accent/50 hover:text-accent-foreground [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5 cursor-pointer transition-all"
+                  type="button"
+                  aria-label={skin.label}
+                  aria-pressed={selected}
+                  onClick={() =>
+                    setSettings((prev) => ({ ...prev, buddySkin: skin.id }))
+                  }
+                  className={`h-7 w-7 rounded-full ring-offset-2 ring-offset-background transition ${skinSwatchClass[skin.id]} ${selected ? "ring-2 ring-foreground" : "hover:scale-110"}`}
+                />
+              );
+            })}
+          </div>
+        </Row>
+
+        <Row label="Theme">
+          <div className="inline-flex rounded-md bg-muted/50 p-0.5">
+            {THEMES.map(({ id, label, Icon }) => {
+              const selected = theme === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setTheme(id)}
+                  className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition ${selected ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                 >
-                  <RadioGroupItem
-                    value={skin.id}
-                    id={`skin-${skin.id}`}
-                    className="sr-only"
-                  />
-                  <span
-                    className={`h-10 w-10 rounded-full border border-border/50 mb-3 ${
-                      skinSwatchClass[skin.id]
-                    }`}
-                  />
-                  <span className="font-semibold text-xs">{skin.label}</span>
-                </Label>
-              ))}
-            </RadioGroup>
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              );
+            })}
           </div>
-        </section>
-
-        {/* App Theme */}
-        <section className="py-8 flex flex-col md:flex-row md:items-start gap-8">
-          <div className="md:w-1/3 shrink-0">
-            <h3 className="text-lg font-bold text-foreground mb-1">
-              App Theme
-            </h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Select your preferred application theme.
-            </p>
-          </div>
-
-          <div className="md:w-2/3">
-            <RadioGroup
-              value={theme}
-              onValueChange={(value: "light" | "dark" | "system") =>
-                setTheme(value)
-              }
-              className="grid grid-cols-1 sm:grid-cols-3 gap-4"
-            >
-              <Label
-                htmlFor="theme-light"
-                className="flex flex-col items-center justify-between rounded-md border border-border/40 bg-card/50 p-4 hover:bg-accent/50 hover:text-accent-foreground [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5 cursor-pointer transition-all"
-              >
-                <RadioGroupItem
-                  value="light"
-                  id="theme-light"
-                  className="sr-only"
-                />
-                <IconSun className="mb-3 h-6 w-6 text-amber-500" />
-                <span className="font-semibold text-xs">Light</span>
-              </Label>
-
-              <Label
-                htmlFor="theme-dark"
-                className="flex flex-col items-center justify-between rounded-md border border-border/40 bg-card/50 p-4 hover:bg-accent/50 hover:text-accent-foreground [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5 cursor-pointer transition-all"
-              >
-                <RadioGroupItem
-                  value="dark"
-                  id="theme-dark"
-                  className="sr-only"
-                />
-                <IconMoon className="mb-3 h-6 w-6 text-indigo-400" />
-                <span className="font-semibold text-xs">Dark</span>
-              </Label>
-
-              <Label
-                htmlFor="theme-system"
-                className="flex flex-col items-center justify-between rounded-md border border-border/40 bg-card/50 p-4 hover:bg-accent/50 hover:text-accent-foreground [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5 cursor-pointer transition-all"
-              >
-                <RadioGroupItem
-                  value="system"
-                  id="theme-system"
-                  className="sr-only"
-                />
-                <IconDeviceDesktop className="mb-3 h-6 w-6 text-slate-500" />
-                <span className="font-semibold text-xs">System</span>
-              </Label>
-            </RadioGroup>
-          </div>
-        </section>
+        </Row>
       </div>
+
     </div>
   );
 }

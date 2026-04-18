@@ -59,12 +59,9 @@ function App() {
         return;
       }
 
-      const params = new URLSearchParams();
-      params.set("section", payload.section);
-
       const settingsWindow = new WebviewWindow("settings", {
         title: "Lory Settings",
-        url: `/settings.html?${params.toString()}`,
+        url: `/#/app/${payload.section}`,
         width: 880,
         height: 560,
         minWidth: 760,
