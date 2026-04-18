@@ -12,6 +12,7 @@ import {
 import { isBefore, startOfDay } from "date-fns";
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { IconChecklist } from "@tabler/icons-react";
 
 function generateRandomColor() {
   return (
@@ -49,15 +50,30 @@ const Header = ({ id }: Props) => {
   const handleUpdate = (field: string, value: string | undefined) => {
     updateProject({ projectId: id, [field]: value });
   };
+  const todayDateString = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
     <div className="space-y-4">
+      <div className="flex w-fit items-center gap-2 border-b border-transparent pb-0.5 text-muted-foreground/30 transition-colors group hover:border-border/40 cursor-default">
+        <IconChecklist
+          size={11}
+          stroke={2.5}
+          className="transition-colors group-hover:text-foreground/50"
+        />
+        <span className="text-[12px] font-bold uppercase tracking-[0.3em] transition-colors group-hover:text-foreground/50">
+          {todayDateString}
+        </span>
+      </div>
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <Popover open={isColorOpen} onOpenChange={setIsColorOpen}>
             <PopoverTrigger asChild>
               <button
-                className="h-10 w-10 shrink-0 rounded-full border-2 border-transparent transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                className="size-6 shrink-0 rounded-full border-2 border-transparent transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 style={{ backgroundColor: project.color || "gray" }}
                 aria-label="Change project color"
               />
@@ -96,7 +112,7 @@ const Header = ({ id }: Props) => {
             placeholder="Project Name"
           />
         </div>
-        <div className="pl-13">
+        <div>
           <InlineTextarea
             value={project.description || ""}
             onChange={(val) => handleUpdate("description", val)}
@@ -106,7 +122,7 @@ const Header = ({ id }: Props) => {
         </div>
       </div>
 
-      <div className="flex items-center pl-13 gap-6 text-sm text-muted-foreground">
+      <div className="flex items-center gap-6 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <span className="font-medium">Start:</span>
           {hasStarted ? (
@@ -120,7 +136,11 @@ const Header = ({ id }: Props) => {
               date={project.startDate}
               onDateChange={(val) => {
                 handleUpdate("startDate", val);
-                if (val && project.dueDate && isBefore(new Date(project.dueDate), startOfDay(new Date(val)))) {
+                if (
+                  val &&
+                  project.dueDate &&
+                  isBefore(new Date(project.dueDate), startOfDay(new Date(val)))
+                ) {
                   handleUpdate("dueDate", undefined);
                 }
               }}
@@ -132,7 +152,11 @@ const Header = ({ id }: Props) => {
           <DateSwitcher
             date={project.dueDate}
             onDateChange={(val) => handleUpdate("dueDate", val)}
-            disabled={project.startDate ? { before: startOfDay(new Date(project.startDate)) } : undefined}
+            disabled={
+              project.startDate
+                ? { before: startOfDay(new Date(project.startDate)) }
+                : undefined
+            }
           />
         </div>
       </div>

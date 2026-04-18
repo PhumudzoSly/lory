@@ -9,15 +9,18 @@ export const list = query({
     status: v.optional(taskStatus),
     excludeStatus: v.optional(taskStatus),
     searchQuery: v.optional(v.string()),
+    projectId: v.optional(v.id("projects")),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
+    const { excludeStatus, projectId } = args;
 
     if (args.searchQuery) {
+      const searchQuery = args.searchQuery;
       const q = ctx.db
         .query("tasks")
         .withSearchIndex("search_title", (q) =>
-          q.search("title", args.searchQuery!).eq("userId", userId)
+          q.search("title", searchQuery).eq("userId", userId),
         );
 
       let results = await q.collect();
@@ -25,8 +28,11 @@ export const list = query({
       if (args.status) {
         results = results.filter((t) => t.status === args.status);
       }
-      if (args.excludeStatus) {
-        results = results.filter((t) => t.status !== args.excludeStatus);
+      if (excludeStatus) {
+        results = results.filter((t) => t.status !== excludeStatus);
+      }
+      if (projectId) {
+        results = results.filter((t) => t.projectId === projectId);
       }
       return results;
     }
@@ -36,16 +42,22 @@ export const list = query({
       .withIndex("by_user", (q) => q.eq("userId", userId));
 
     if (args.status) {
+      const status = args.status;
       q = ctx.db
         .query("tasks")
         .withIndex("by_user_and_status", (q) =>
-          q.eq("userId", userId).eq("status", args.status!)
+          q.eq("userId", userId).eq("status", status),
         );
-    } else if (args.excludeStatus) {
-      q = q.filter((q) => q.neq(q.field("status"), args.excludeStatus!));
+    } else if (excludeStatus) {
+      q = q.filter((q) => q.neq(q.field("status"), excludeStatus));
     }
 
-    const results = await q.collect();
+    let results = await q.collect();
+
+    if (projectId) {
+      results = results.filter((t) => t.projectId === projectId);
+    }
+
     return results;
   },
 });

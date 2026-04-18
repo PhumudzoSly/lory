@@ -1,12 +1,24 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   IconCalendar,
   IconFolder,
-  IconClock,
   IconCircleCheck,
+  IconTrash,
 } from "@tabler/icons-react";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { formatDistanceToNow, isToday } from "date-fns";
@@ -24,12 +36,18 @@ interface TaskListProps {
 
 export const TaskList = ({ tasks, title, description }: TaskListProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const setStatus = useMutation(api.tasks.setStatus);
   const updateTask = useMutation(api.tasks.update);
+  const removeTask = useMutation(api.tasks.remove);
+  const projects = useQuery(api.projects.list) || [];
 
   if (tasks.length === 0) return null;
 
   const totalTasks = tasks.length;
+  const projectNameById = new Map(
+    projects.map((project) => [project._id, project.name]),
+  );
 
   return (
     <div className="space-y-6">
@@ -102,12 +120,14 @@ export const TaskList = ({ tasks, title, description }: TaskListProps) => {
                 <div className="mt-0.5 flex shrink-0 items-center gap-3 pl-4 opacity-0 transition-opacity group-hover:opacity-100">
                   {task.projectId && (
                     <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/30">
-                      {task.projectId}
+                      {projectNameById.get(task.projectId) || "Project"}
                     </span>
                   )}
                   {task.time && (
                     <span className="text-[10px] font-medium text-muted-foreground/40">
-                      {isToday(new Date(task.time)) ? "due today" : `due ${formatDistanceToNow(new Date(task.time), { addSuffix: true })}`}
+                      {isToday(new Date(task.time))
+                        ? "due today"
+                        : `due ${formatDistanceToNow(new Date(task.time), { addSuffix: true })}`}
                     </span>
                   )}
                 </div>
@@ -128,7 +148,9 @@ export const TaskList = ({ tasks, title, description }: TaskListProps) => {
                 <div className="flex items-center gap-2 mb-4 text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors w-fit cursor-pointer">
                   <IconFolder size={14} stroke={2.5} />
                   <span className="text-[11px] font-bold uppercase tracking-widest">
-                    {selectedTask.projectId || "Inbox"}
+                    {selectedTask.projectId
+                      ? projectNameById.get(selectedTask.projectId) || "Project"
+                      : "Inbox"}
                   </span>
                 </div>
                 <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-left text-left p-0 wrap-break-word">
@@ -190,11 +212,14 @@ export const TaskList = ({ tasks, title, description }: TaskListProps) => {
 
                   <div className="grid grid-cols-[120px_1fr] items-center gap-4">
                     <div className="flex items-center gap-2 text-[12px] font-medium text-muted-foreground/60">
-                      <IconClock size={16} stroke={2} className="opacity-70" />
-                      Duration
+                      <IconFolder size={16} stroke={2} className="opacity-70" />
+                      Project
                     </div>
-                    <div className="text-[13px] font-medium text-foreground/50 hover:text-foreground transition-colors cursor-pointer px-1 -mx-1">
-                      45m
+                    <div className="text-[13px] font-medium text-foreground/70 px-1 -mx-1">
+                      {selectedTask.projectId
+                        ? projectNameById.get(selectedTask.projectId) ||
+                          "Project"
+                        : "Inbox"}
                     </div>
                   </div>
                 </div>
@@ -213,6 +238,52 @@ export const TaskList = ({ tasks, title, description }: TaskListProps) => {
                       placeholder="Add a more detailed description..."
                       className="min-h-50"
                     />
+                  </div>
+
+                  <div className="pt-2 border-t border-border/40 flex justify-end">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="gap-1.5"
+                        >
+                          <IconTrash size={14} />
+                          Delete Task
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent size="sm">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete task?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently remove this task.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel size="sm">
+                            Cancel
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            variant="destructive"
+                            size="sm"
+                            disabled={isDeleting}
+                            onClick={() => {
+                              if (!selectedTask) return;
+                              setIsDeleting(true);
+                              void removeTask({ taskId: selectedTask._id })
+                                .then(() => {
+                                  setSelectedTask(null);
+                                })
+                                .finally(() => {
+                                  setIsDeleting(false);
+                                });
+                            }}
+                          >
+                            {isDeleting ? "Deleting..." : "Delete"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </div>

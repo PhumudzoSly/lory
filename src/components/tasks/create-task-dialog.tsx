@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "convex/react";
 import { IconPlus } from "@tabler/icons-react";
 import {
@@ -14,11 +14,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { StatusSwitcher, type TaskStatus } from "./status-switcher";
 import { DateSwitcher } from "./date-switcher";
 import { ProjectSelector } from "./project-selector";
 
-export function CreateTaskDialog() {
+type CreateTaskDialogProps = {
+  readonly defaultProjectId?: Id<"projects">;
+  readonly lockProjectSelection?: boolean;
+};
+
+export function CreateTaskDialog({
+  defaultProjectId,
+  lockProjectSelection = false,
+}: CreateTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const createTask = useMutation(api.tasks.create);
 
@@ -26,7 +35,13 @@ export function CreateTaskDialog() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("todo");
   const [time, setTime] = useState<string | undefined>();
-  const [projectId, setProjectId] = useState<string | undefined>();
+  const [projectId, setProjectId] = useState<Id<"projects"> | undefined>(
+    defaultProjectId,
+  );
+
+  useEffect(() => {
+    setProjectId(defaultProjectId);
+  }, [defaultProjectId, open]);
 
   const handleCreate = async () => {
     if (!title.trim()) return;
@@ -36,14 +51,14 @@ export function CreateTaskDialog() {
         description: description.trim() || undefined,
         status,
         time,
-        projectId: projectId as any,
+        projectId,
       });
       setOpen(false);
       setTitle("");
       setDescription("");
       setStatus("todo");
       setTime(undefined);
-      setProjectId(undefined);
+      setProjectId(defaultProjectId);
     } catch (e) {
       console.error(e);
     }
@@ -96,13 +111,15 @@ export function CreateTaskDialog() {
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="project">Project</Label>
-            <ProjectSelector
-              projectId={projectId}
-              onProjectChange={setProjectId}
-            />
-          </div>
+          {!lockProjectSelection && (
+            <div className="grid gap-2">
+              <Label htmlFor="project">Project</Label>
+              <ProjectSelector
+                projectId={projectId}
+                onProjectChange={setProjectId}
+              />
+            </div>
+          )}
 
           <div className="grid gap-2">
             <Label htmlFor="description">Description</Label>

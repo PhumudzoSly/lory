@@ -2,6 +2,7 @@ import * as React from "react";
 import { IconFolder, IconFolderX } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import {
   Popover,
   PopoverContent,
@@ -21,8 +22,8 @@ export function ProjectSelector({
   projectId,
   onProjectChange,
 }: {
-  readonly projectId: string | undefined;
-  readonly onProjectChange: (id: string | undefined) => void;
+  readonly projectId: Id<"projects"> | undefined;
+  readonly onProjectChange: (id: Id<"projects"> | undefined) => void;
 }) {
   const [open, setOpen] = React.useState(false);
   const projects = useQuery(api.projects.list) || [];
