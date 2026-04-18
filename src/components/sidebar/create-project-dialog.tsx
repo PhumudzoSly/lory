@@ -15,7 +15,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { DateSwitcher } from "../tasks/date-switcher";import { isBefore, startOfDay } from "date-fns";
+import { DateSwitcher } from "../tasks/date-switcher";
+import { isBefore, startOfDay } from "date-fns";
+
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
@@ -131,7 +133,7 @@ export function CreateProjectDialog({
                 <DateSwitcher
                   date={form.watch("dueDate")}
                   onDateChange={(date) => form.setValue("dueDate", date)}
-                  disabled={form.watch("startDate") ? { before: startOfDay(new Date(form.watch("startDate")!)) } : undefined}
+                  disabled={form.watch("startDate") ? { before: startOfDay(new Date(form.watch("startDate") as string)) } : undefined}
                 />
               </div>
             </div>

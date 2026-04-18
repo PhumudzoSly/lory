@@ -4,13 +4,22 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { InlineInput } from "@/components/tasks/inline-input";
 import { InlineTextarea } from "@/components/tasks/inline-textarea";
 import { DateSwitcher } from "@/components/tasks/date-switcher";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { isBefore, startOfDay } from "date-fns";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
 function generateRandomColor() {
-  return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+  return (
+    "#" +
+    Math.floor(Math.random() * 16777215)
+      .toString(16)
+      .padStart(6, "0")
+  );
 }
 
 interface Props {
@@ -32,8 +41,9 @@ const Header = ({ id }: Props) => {
 
   if (!project) return null;
 
-  const hasStarted = project.startDate 
-    ? isBefore(new Date(project.startDate), startOfDay(new Date())) || new Date(project.startDate).toDateString() === new Date().toDateString()
+  const hasStarted = project.startDate
+    ? isBefore(new Date(project.startDate), startOfDay(new Date())) ||
+      new Date(project.startDate).toDateString() === new Date().toDateString()
     : false;
 
   const handleUpdate = (field: string, value: string | undefined) => {
@@ -66,7 +76,9 @@ const Header = ({ id }: Props) => {
                       }}
                       className={cn(
                         "size-8 rounded-full border-2 transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                        project.color === c ? "border-foreground scale-110" : "border-transparent hover:scale-105"
+                        project.color === c
+                          ? "border-foreground scale-110"
+                          : "border-transparent hover:scale-105",
                       )}
                       style={{ backgroundColor: c }}
                       title={c}
@@ -93,18 +105,25 @@ const Header = ({ id }: Props) => {
           />
         </div>
       </div>
-      
+
       <div className="flex items-center pl-13 gap-6 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <span className="font-medium">Start:</span>
           {hasStarted ? (
             <span className="px-2 py-1 text-xs opacity-70">
-              {project.startDate ? new Date(project.startDate).toLocaleDateString() : "Not set"}
+              {project.startDate
+                ? new Date(project.startDate).toLocaleDateString()
+                : "Not set"}
             </span>
           ) : (
             <DateSwitcher
               date={project.startDate}
-              onDateChange={(val) => handleUpdate("startDate", val)}
+              onDateChange={(val) => {
+                handleUpdate("startDate", val);
+                if (val && project.dueDate && isBefore(new Date(project.dueDate), startOfDay(new Date(val)))) {
+                  handleUpdate("dueDate", undefined);
+                }
+              }}
             />
           )}
         </div>
@@ -113,6 +132,7 @@ const Header = ({ id }: Props) => {
           <DateSwitcher
             date={project.dueDate}
             onDateChange={(val) => handleUpdate("dueDate", val)}
+            disabled={project.startDate ? { before: startOfDay(new Date(project.startDate)) } : undefined}
           />
         </div>
       </div>
